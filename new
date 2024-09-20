@@ -193,3 +193,129 @@ export const queries = {
     `
 };
 =========================
+
+updated pm_unid
+
+
+
+import { Injectable } from '@nestjs/common';
+import taskrepo from "./task.repo";
+
+@Injectable()
+export class TaskService {
+    constructor(private taskrepo: taskrepo) {}
+
+    async PmData(pmHeaderId) {
+        try {
+            const { headerData, pmtasks } = await this.taskrepo.pmSData(pmHeaderId);
+
+            const transformedData = pmtasks.map(item => {
+                const lowerCaseItem = {};
+                for (const key in item) {
+                    if (item.hasOwnProperty(key)) {
+                        lowerCaseItem[key.toLowerCase()] = item[key];
+                    }
+                }
+                return lowerCaseItem;
+            });
+
+            return { 
+                headerData, 
+                pmtasks: transformedData 
+            };
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async updateTask(pmData) {
+        try {
+            // Validate pm_unid
+            if (!pmData.pm_unid) {
+                throw new Error('PM UNID is required');
+            }
+
+            const updateResult = await this.taskrepo.updatePmTasks(pmData);
+            return {
+                message: "PM tasks updated successfully",
+                pm: updateResult
+            };
+        } catch (error) {
+            throw new Error(`Failed to update PM tasks: ${error.message}`);
+        }
+    }
+}
+=========================
+
+import { Injectable } from '@nestjs/common';
+import Oracle from '../common/database/oracle';
+import { queries } from "./task.qFactory";
+
+@Injectable()
+export default class taskrepo {
+    constructor(private oraUtil: Oracle) {}
+
+    async pmSData(pmHeaderId) {
+        try {
+            const query = queries.getTestById;
+            const qParams = [pmHeaderId];
+            let pmData: any = await this.oraUtil.executeQuery(query, qParams);
+            pmData = pmData.rows;
+
+            const query1 = queries.getestById;
+            let headerData1: any = await this.oraUtil.executeQuery(query1, qParams);
+
+            const statusQuery = queries.getTestbyId;
+            const statusParams = [pmHeaderId];
+            let statusData: any = await this.oraUtil.executeQuery(statusQuery, statusParams);
+            const statusArray = statusData.rows.map(row => row.STATUS_ID);
+            for (let task of pmData) {
+                task.availablestatuses = statusArray;
+            }
+
+            return {
+                headerData: headerData1.rows,
+                pmtasks: pmData
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async updatePmTasks(pmData) {
+        try {
+            const { pm_unid, pmtasks } = pmData;
+
+            // Update logic here, assuming you have an update query
+            const updateQuery = queries.updatePmTasks; // Ensure this query is defined in your qFactory
+            const updateParams = [pm_unid, ...pmtasks]; // Adjust according to your actual update logic
+
+            const result = await this.oraUtil.executeQuery(updateQuery, updateParams);
+
+            if (result.rowCount === 0) {
+                throw new Error('No tasks updated. Invalid PM UNID.');
+            }
+
+            return pmData; // Return updated pmData or any required structure
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+==========================
+
+export const queries = {
+    // ...existing queries
+    updatePmTasks: `
+    UPDATE opspm.PM_TASK_LIST_ITEM
+    SET 
+        -- Set the fields to update based on the incoming data
+        DEFAULT_STATUS_ID = :defaultStatusId,
+        STATUS = :status,
+        -- Add other fields as necessary
+    WHERE 
+        PM_UNID = :pmUnid AND 
+        TASK_UNID = :taskUnid
+    `,
+};
