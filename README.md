@@ -1678,3 +1678,33 @@ response body
         ]
     }
 }
+
+=========================================
+SELECT
+      b.STATUS_ID AS availablestatuses,
+      c.CATEGORY_NAME AS category,
+      a.HELP_TEXT AS cfd_helptext_coverted,
+      a.COMMENTS AS comments,
+      d.STATUS_NAME AS defaultstatus,
+      pwd.IS_DONE AS isdone,
+      a.IS_OPTIONAL AS isoptional,
+      a.META_CREATED_BY AS meta_createdby,
+      a.META_CREATED_DATE AS meta_createddate,
+      a.META_LAST_UPDATED_BY AS meta_lastupdateby,
+      a.META_LAST_UPDATED_DATE AS meta_lastupdatedate,
+      a.META_UNIVERSAL_ID AS meta_universalid,
+      a.MINUTES_EST AS minutes_est,
+      e.SPECIFIC_DATA_DESC AS specifictask,
+      e.SPECIFIC_DATA_VALUE AS specifictask_value,
+      d.STATUS_NAME AS status,
+      a.TASK_NAME AS taskname
+    FROM opspm.PM_TASK_LIST_ITEM a
+    LEFT JOIN opspm.PM_TEMPLATE_TASK b ON a.TASK_ID = b.TASK_ID
+    LEFT JOIN opspm.PM_TASK_CATEGORY c ON a.CATEGORY_ID = c.CATEGORY_ID
+    LEFT JOIN opspm.PM_STATUS d ON a.DEFAULT_STATUS_ID = d.STATUS_ID
+    LEFT JOIN opspm.PM_SPECIFIC_DATA e ON a.SPECIFIC_DATA_ID = e.SPECIFIC_DATA_ID
+    LEFT JOIN opspm.PM_FREQUENCY f ON a.FREQUENCY_ID = f.FREQUENCY_ID
+    LEFT JOIN opspm.PM_LOCATION_TASK pw ON pw.TASK_ID = a.TASK_ID
+    LEFT JOIN pmd_widget_pm_details pwd ON pwd.PM_UNID = pw.PM_UNID
+    LEFT JOIN ops_Pm_data s ON s.FREQUENCY = f.FREQUENCY_NAME
+    WHERE s.PM_UNID = :pmHeadderId`
