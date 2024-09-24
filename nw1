@@ -41,3 +41,18 @@ describe('UpdateTaskRepo', () => {
     });
   });
 })
+=======================
+ UpdateTaskRepo › updatetask › should throw error if executeQuery fails
+                                                                                                                                     
+    expect(received).rejects.toThrow()                                                                                               
+                                                                                                                                     
+    Received promise resolved instead of rejected                                                                                    
+    Resolved to value: undefined                                                                                                     
+                                                                                                                                     
+      41 |       const req = { body: { pm: { pmtasks: [] } } };                                                                      
+      42 |       jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('DB Error'));
+    > 43 |       await expect(repo.updatetask(req)).rejects.toThrow('DB Error');
+         |             ^
+      44 |     });
+      45 |   });
+      46 | })
