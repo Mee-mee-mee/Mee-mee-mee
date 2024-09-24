@@ -1,1 +1,43 @@
 
+import { Test, TestingModule } from '@nestjs/testing';
+import  UpdateTaskRepo  from './UpdateTask.repo';
+import Oracle from '../common/database/oracle';
+describe('UpdateTaskRepo', () => {
+  let repo: UpdateTaskRepo;
+  let oraUtil: Oracle;
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdateTaskRepo,
+        {
+          provide: Oracle,
+          useValue: { executeQuery: jest.fn() },
+        },
+      ],
+    }).compile();
+    repo = module.get<UpdateTaskRepo>(UpdateTaskRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+  describe('updatetask', () => {
+    it('should execute query for each task and return affected rows', async () => {
+      const req = {
+        body: {
+          pm: {
+            pmtasks: [{ status: 'completed', task_unid: 1 }],
+          },
+        },
+      };
+      const mockQuery = 'UPDATE ...'; // Replace with your actual query
+      const result = { rowsaffected: 1 };
+      jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(result);
+      const affectedRows = await repo.updatetask(req);
+      expect(oraUtil.executeQuery).toHaveBeenCalledWith(mockQuery, expect.any(Array));
+      expect(affectedRows).toBe(1);
+    });
+    it('should throw error if executeQuery fails', async () => {
+      const req = { body: { pm: { pmtasks: [] } } };
+      jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('DB Error'));
+      await expect(repo.updatetask(req)).rejects.toThrow('DB Error');
+    });
+  });
+})
