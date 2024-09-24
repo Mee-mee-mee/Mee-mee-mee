@@ -32,3 +32,69 @@
  PASS  src/updateTask/UpdateTask.controller.spec.ts (7.258 s)
   ● Console
                      
+=========================
+// updateTask.repo.spec.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import UpdateTaskRepo from './UpdateTask.repo';
+import Oracle from '../common/database/oracle';
+
+describe('UpdateTaskRepo', () => {
+  let repo: UpdateTaskRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdateTaskRepo,
+        {
+          provide: Oracle,
+          useValue: {
+            executeQuery: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    repo = module.get<UpdateTaskRepo>(UpdateTaskRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
+  });
+
+  describe('updatetask', () => {
+    it('should update tasks and return affected rows', async () => {
+      const req = {
+        body: {
+          pm: {
+            pmtasks: [{ status: 'completed', task_unid: '1' }],
+            userid: 'user123',
+          },
+        },
+      };
+
+      oraUtil.executeQuery = jest.fn().mockResolvedValue({ rowsaffected: 1 });
+
+      const result = await repo.updatetask(req);
+      expect(result).toBe(1);
+      expect(oraUtil.executeQuery).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw an error if the database call fails', async () => {
+      const req = {
+        body: {
+          pm: {
+            pmtasks: [{ status: 'failed', task_unid: '2' }],
+            userid: 'user123',
+          },
+        },
+      };
+
+      oraUtil.executeQuery = jest.fn().mockRejectedValue(new Error('DB Error'));
+
+      await expect(repo.updatetask(req)).rejects.toThrow('DB Error');
+      expect(oraUtil.executeQuery).toHaveBeenCalledTimes(1); // Ensure it's called
+    });
+  });
+});
