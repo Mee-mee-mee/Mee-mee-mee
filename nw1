@@ -56,3 +56,118 @@ describe('UpdateTaskRepo', () => {
       44 |     });
       45 |   });
       46 | })
+==============
+import { Test, TestingModule } from '@nestjs/testing';
+import UpdateTaskRepo from './UpdateTask.repo';
+import Oracle from '../common/database/oracle';
+
+describe('UpdateTaskRepo', () => {
+  let repo: UpdateTaskRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdateTaskRepo,
+        {
+          provide: Oracle,
+          useValue: { executeQuery: jest.fn() },
+        },
+      ],
+    }).compile();
+    
+    repo = module.get<UpdateTaskRepo>(UpdateTaskRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  describe('updatetask', () => {
+    it('should execute query for each task and return affected rows', async () => {
+      const req = {
+        body: {
+          pm: {
+            pmtasks: [{ status: 'completed', task_unid: 1 }],
+          },
+        },
+      };
+      const mockQuery = 'UPDATE ...'; // Replace with your actual query
+      const result = { rowsaffected: 1 };
+      jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(result);
+
+      const affectedRows = await repo.updatetask(req);
+
+      expect(oraUtil.executeQuery).toHaveBeenCalledWith(mockQuery, expect.any(Array));
+      expect(affectedRows).toBe(1);
+    });
+
+    it('should handle multiple tasks and return total affected rows', async () => {
+      const req = {
+        body: {
+          pm: {
+            pmtasks: [
+              { status: 'completed', task_unid: 1 },
+              { status: 'in-progress', task_unid: 2 },
+            ],
+          },
+        },
+      };
+      const mockQuery = 'UPDATE ...'; // Replace with your actual query
+      const result = { rowsaffected: 2 };
+      jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(result);
+
+      const affectedRows = await repo.updatetask(req);
+
+      expect(oraUtil.executeQuery).toHaveBeenCalledWith(mockQuery, expect.any(Array));
+      expect(affectedRows).toBe(2);
+    });
+
+    it('should return 0 affected rows if no tasks are provided', async () => {
+      const req = { body: { pm: { pmtasks: [] } } };
+
+      const affectedRows = await repo.updatetask(req);
+
+      expect(affectedRows).toBe(0);
+      expect(oraUtil.executeQuery).not.toHaveBeenCalled();
+    });
+
+    it('should throw error if executeQuery fails', async () => {
+      const req = {
+        body: {
+          pm: {
+            pmtasks: [{ status: 'completed', task_unid: 1 }],
+          },
+        },
+      };
+      jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('DB Error'));
+
+      await expect(repo.updatetask(req)).rejects.toThrow('DB Error');
+    });
+
+    it('should throw error for malformed request', async () => {
+      const req = { body: {} }; // No pm or pmtasks
+
+      await expect(repo.updatetask(req)).rejects.toThrow('Malformed request');
+    });
+
+    it('should handle a large number of tasks', async () => {
+      const tasks = Array.from({ length: 1000 }, (_, i) => ({
+        status: 'completed',
+        task_unid: i + 1,
+      }));
+      const req = {
+        body: {
+          pm: {
+            pmtasks: tasks,
+          },
+        },
+      };
+      const mockQuery = 'UPDATE ...'; // Replace with your actual query
+      const result = { rowsaffected: tasks.length };
+      jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(result);
+
+      const affectedRows = await repo.updatetask(req);
+
+      expect(oraUtil.executeQuery).toHaveBeenCalledWith(mockQuery, expect.any(Array));
+      expect(affectedRows).toBe(tasks.length);
+    });
+  });
+});
