@@ -446,3 +446,69 @@ describe('UpdateTaskService', () => {
     });
   });
 });
++++++++++++++++++++++++++++++++++++++++++++
+
+  ● UpdateTaskRepo › updatetask › should throw error for malformed request
+
+    expect(received).rejects.toThrow(expected)
+
+    Expected substring: "Malformed request"
+    Received message:   "Cannot read properties of undefined (reading 'pmtasks')"
+
+          11 |
+          12 |     const query = queries.updatetask;
+        > 13 |     const pmtasks = req.body.pm.pmtasks;
+             |                                 ^
+          14 |     console.log(pmtasks)
+          15 |     const META_CREATED_BY= req.body.pm.userid;
+          16 |     var result;
+
+          at UpdateTaskRepo.pmtasks [as updatetask] (src/updateTask/UpdateTask.repo.ts:13:33)
+          at Object.<anonymous> (src/updateTask/UpdateTask.repo.spec.ts:102:25)
+
+      100 |       const req = { body: {} }; // No pm or pmtasks
+      101 |
+    > 102 |       await expect(repo.updatetask(req)).rejects.toThrow('Malformed request');
+          |                                                  ^
+      103 |     });
+      104 |
+      105 |     it('should handle a large number of tasks', async () => {
+
+      at Object.toThrow (../node_modules/expect/build/index.js:218:22)
+      at Object.<anonymous> (updateTask/UpdateTask.repo.spec.ts:102:50)
+
+  ● UpdateTaskRepo › updatetask › should handle a large number of tasks
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "UPDATE opspm.pm_location_task·
+            SET STATUS_ID = :STATUS,
+            META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+            META_LAST_UPDATED_BY = :META_CREATED_BY
+            WHERE META_UNIVERSAL_ID = :TASK_UNID", Any<Array>
+    Received
+           1: "UPDATE opspm.pm_location_task·
+        SET STATUS_ID = :STATUS,
+        META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+        META_LAST_UPDATED_BY = :META_CREATED_BY
+        WHERE META_UNIVERSAL_ID = :TASK_UNID", ["completed", undefined, 1]
+           2: "UPDATE opspm.pm_location_task·
+        SET STATUS_ID = :STATUS,
+        META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+        META_LAST_UPDATED_BY = :META_CREATED_BY
+        WHERE META_UNIVERSAL_ID = :TASK_UNID", ["completed", undefined, 2]
+           3: "UPDATE opspm.pm_location_task·
+        SET STATUS_ID = :STATUS,
+        META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+        META_LAST_UPDATED_BY = :META_CREATED_BY
+        WHERE META_UNIVERSAL_ID = :TASK_UNID", ["completed", undefined, 3]
+
+    Number of calls: 1000
+
+      125 |       const affectedRows = await repo.updatetask(req);
+      126 |
+    > 127 |       expect(oraUtil.executeQuery).toHaveBeenCalledWith(mockQuery, expect.any(Array));
+          |                                    ^
+      128 |       expect(affectedRows).toBe(tasks.length);
+      129 |     });
+      130 |   });
