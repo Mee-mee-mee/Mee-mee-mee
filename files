@@ -252,3 +252,65 @@ describe('UpdateTaskController', () => {
     });
   });
 });
+------------------------------------------------------------------
+// updateTask.controller.spec.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateTaskController } from './UpdateTask.controller';
+import { UpdateTaskService } from './UpdateTask.service';
+import { Response } from 'express';
+
+describe('UpdateTaskController', () => {
+  let controller: UpdateTaskController;
+  let service: UpdateTaskService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UpdateTaskController],
+      providers: [
+        {
+          provide: UpdateTaskService,
+          useValue: {
+            updateDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<UpdateTaskController>(UpdateTaskController);
+    service = module.get<UpdateTaskService>(UpdateTaskService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('putTaskReading', () => {
+    it('should call updateDetails and return data', async () => {
+      const req = { body: { pm: { pmtasks: [] } } } as any; // Casting to 'any' to avoid type errors
+      const res = {
+        send: jest.fn(),
+      } as unknown as Response; // Cast to 'Response'
+
+      service.updateDetails = jest.fn().mockResolvedValue({ message: 'Success' });
+
+      await controller.putTaskReading(req, res);
+      expect(service.updateDetails).toHaveBeenCalledWith(req);
+      expect(res.send).toHaveBeenCalledWith({ message: 'Success' });
+    });
+
+    it('should handle errors and return status 500', async () => {
+      const req = { body: { pm: { pmtasks: [] } } } as any; // Casting to 'any' to avoid type errors
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response; // Cast to 'Response'
+
+      service.updateDetails = jest.fn().mockRejectedValue(new Error('Error'));
+
+      await controller.putTaskReading(req, res);
+      expect(service.updateDetails).toHaveBeenCalledWith(req);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith(expect.any(Error));
+    });
+  });
+});
