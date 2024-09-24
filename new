@@ -1,321 +1,34 @@
-import { Controller, Param, Get, Req, Res, Put, Body } from '@nestjs/common';
-import { TaskService } from './task.service';
-import { ApiTags } from '@nestjs/swagger';
-import logger from '../../config/Log.config';
-import { Request, Response } from 'express';
+ FAIL  src/updateTask/UpdateTask.repo.spec.ts (6.979 s)
+  ● Console
 
-@Controller('ioppm')
-@ApiTags('Default')
-export class TaskController {
-    constructor(private taskService: TaskService) {}
+    console.log
+      [ { status: 'completed', task_unid: '1' } ]
 
-    @Get('/pm/:pmHeaderId/tasks')
-    async getTasksByPm(
-        @Param('pmHeaderId') pmHeaderId: string,
-        @Req() req: Request,
-        @Res() res: Response,
-    ) {
-        try {
-            const pmData: any = await this.taskService.PmData(pmHeaderId);
+      at UpdateTaskRepo.updatetask (updateTask/UpdateTask.repo.ts:14:13)
 
-            if (pmData.pmtasks.length === 0) {
-                return res.status(204).send();
-            } else {
-                return res.send(pmData);
-            }
-        } catch (err) {
-            logger.error('No tasks found for PM', err);
-            return res.status(500).json(err);
-        }
-    }
+    console.log
+      []
 
-    @Put('/pm/task/update')
-    async updateTask(
-        @Body() body: any,
-        @Req() req: Request,
-        @Res() res: Response,
-    ) {
-        try {
-            const response = await this.taskService.updateTask(body.pm);
-            return res.send(response);
-        } catch (err) {
-            logger.error('Error updating PM task', err);
-            return res.status(500).json(err);
-        }
-    }
-}
-============================
-import { Injectable } from '@nestjs/common';
-import TaskRepo from "./task.repo";
+      at UpdateTaskRepo.updatetask (updateTask/UpdateTask.repo.ts:14:13)
 
-@Injectable()
-export class TaskService {
-    constructor(private taskRepo: TaskRepo) {}
+  ● UpdateTaskRepo › updatetask › should throw an error if the database call fails
+                                                                                                                                     
+    expect(received).rejects.toThrow()                                                                                               
+                                                                                                                                     
+    Received promise resolved instead of rejected                                                                                    
+    Resolved to value: undefined                                                                                                     
+                                                                                                                                     
+      52 |       oraUtil.executeQuery = jest.fn().mockRejectedValue(new Error('DB Error'));                                          
+      53 |
+    > 54 |       await expect(repo.updatetask(req)).rejects.toThrow('DB Error');
+         |             ^
+      55 |     });
+      56 |   });
+      57 | });
 
-    async PmData(pmHeaderId) {
-        try {
-            const { headerData, pmtasks } = await this.taskRepo.pmSData(pmHeaderId);
-            const transformedData = pmtasks.map(item => {
-                const lowerCaseItem = {};
-                for (const key in item) {
-                    if (item.hasOwnProperty(key)) {
-                        lowerCaseItem[key.toLowerCase()] = item[key];
-                    }
-                }
-                return lowerCaseItem;
-            });
+      at expect (../node_modules/expect/build/index.js:113:15)
+      at Object.<anonymous> (updateTask/UpdateTask.repo.spec.ts:54:13)
 
-            return { 
-                headerData, 
-                pmtasks: transformedData 
-            };
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async updateTask(taskData) {
-        return await this.taskRepo.updateTask(taskData);
-    }
-}
-==========================================
-import { Injectable } from '@nestjs/common';
-import Oracle from '../common/database/oracle';
-import { queries } from "./task.qFactory";
-
-@Injectable()
-export default class TaskRepo {
-    constructor(private oraUtil: Oracle) {}
-
-    async pmSData(pmHeaderId) {
-        try {
-            const query = queries.getTestById;
-            const qParams = { pmHeaderId };
-            let pmData: any = await this.oraUtil.executeQuery(query, qParams);
-            pmData = pmData.rows;
-
-            const query1 = queries.getestById;
-            let headerData1: any = await this.oraUtil.executeQuery(query1, qParams);
-
-            const statusQuery = queries.getTestbyId;
-            let statusData: any = await this.oraUtil.executeQuery(statusQuery, qParams);
-            const statusArray = statusData.rows.map(row => row.STATUS_ID);
-            for (let task of pmData) {
-                task.availablestatuses = statusArray;
-            }
-
-            return {
-                headerData: headerData1.rows,
-                pmtasks: pmData
-            };
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async updateTask(taskData) {
-        try {
-            const query = queries.updateTask;
-            const qParams = {
-                status: taskData.status,
-                isdone: taskData.isdone,
-                comments: taskData.comments,
-                userid: taskData.userid,
-                task_unid: taskData.task_unid,
-                pm_unid: taskData.pm_unid
-            };
-            await this.oraUtil.executeQuery(query, qParams);
-            return { message: "PM task updated successfully" };
-        } catch (error) {
-            throw error;
-        }
-    }
-}
-======================
-export const queries = {
-    getTestById: `
-    SELECT
-        c.CATEGORY_NAME AS category,
-        a.HELP_TEXT AS cfd_helptext_converted,
-        a.COMMENTS AS comments,
-        d.STATUS_NAME AS defaultstatus,
-        a.IS_OPTIONAL AS isoptional,
-        a.META_CREATED_BY AS meta_createdby,
-        a.META_CREATED_DATE AS meta_createddate,
-        a.META_LAST_UPDATED_BY AS meta_lastupdateby,
-        a.META_LAST_UPDATED_DATE AS meta_lastupdatedate,
-        a.META_UNIVERSAL_ID AS meta_universalid,
-        a.MINUTES_EST AS minutes_est,
-        e.SPECIFIC_DATA_DESC AS specifictask,
-        e.SPECIFIC_DATA_VALUE AS specifictask_value,
-        a.TASK_NAME AS taskname,
-        d.STATUS_ID AS status,
-        a.TASK_UNID AS task_unid
-    FROM
-        opspm.PM_TASK_LIST_ITEM a
-    LEFT JOIN
-        opspm.PM_TEMPLATE_TASK b ON a.TASK_ID = b.TASK_ID
-    LEFT JOIN
-        opspm.PM_TASK_CATEGORY c ON a.CATEGORY_ID = c.CATEGORY_ID
-    LEFT JOIN
-        opspm.PM_STATUS d ON a.DEFAULT_STATUS_ID = d.STATUS_ID
-    LEFT JOIN
-        opspm.PM_SPECIFIC_DATA e ON a.SPECIFIC_DATA_ID = e.SPECIFIC_DATA_ID
-    LEFT JOIN
-        opspm.PM_FREQUENCY f ON a.FREQUENCY_ID = f.FREQUENCY_ID
-    LEFT JOIN
-        ops_Pm_data s ON s.FREQUENCY = f.FREQUENCY_NAME
-    WHERE s.PM_UNID = :pmHeaderId
-    `,
-    getestById: `
-    SELECT 
-        pmd_widget_pm_details.NUM_OF_TASKS AS numtasks, 
-        pmd_widget_pm_details.NUM_OF_TASKS_DONE AS numstasksdone 
-    FROM 
-        pmd_widget_pm_details
-    WHERE pmd_widget_pm_details.PM_UNID = :pmHeaderId
-    `,
-    getTestbyId: `
-    SELECT DISTINCT a.STATUS_ID
-    FROM opspm.PM_TASK_AVAILABLE_STATUS_ITEM a
-    JOIN OPSPM.PM_LOCATION_TASK b ON a.TASK_ID = b.TASK_ID
-    WHERE b.PM_HEADER_ID = :pmHeaderId
-    `,
-    updateTask: `
-    UPDATE opspm.PM_TASK_LIST_ITEM
-    SET 
-        STATUS = :status,
-        ISDONE = :isdone,
-        COMMENTS = :comments,
-        META_LAST_UPDATED_BY = :userid,
-        META_LAST_UPDATED_DATE = SYSDATE
-    WHERE TASK_UNID = :task_unid AND PM_UNID = :pm_unid
-    `
-};
-=========================
-
-updated pm_unid
-
-
-
-import { Injectable } from '@nestjs/common';
-import taskrepo from "./task.repo";
-
-@Injectable()
-export class TaskService {
-    constructor(private taskrepo: taskrepo) {}
-
-    async PmData(pmHeaderId) {
-        try {
-            const { headerData, pmtasks } = await this.taskrepo.pmSData(pmHeaderId);
-
-            const transformedData = pmtasks.map(item => {
-                const lowerCaseItem = {};
-                for (const key in item) {
-                    if (item.hasOwnProperty(key)) {
-                        lowerCaseItem[key.toLowerCase()] = item[key];
-                    }
-                }
-                return lowerCaseItem;
-            });
-
-            return { 
-                headerData, 
-                pmtasks: transformedData 
-            };
-
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async updateTask(pmData) {
-        try {
-            // Validate pm_unid
-            if (!pmData.pm_unid) {
-                throw new Error('PM UNID is required');
-            }
-
-            const updateResult = await this.taskrepo.updatePmTasks(pmData);
-            return {
-                message: "PM tasks updated successfully",
-                pm: updateResult
-            };
-        } catch (error) {
-            throw new Error(`Failed to update PM tasks: ${error.message}`);
-        }
-    }
-}
-=========================
-
-import { Injectable } from '@nestjs/common';
-import Oracle from '../common/database/oracle';
-import { queries } from "./task.qFactory";
-
-@Injectable()
-export default class taskrepo {
-    constructor(private oraUtil: Oracle) {}
-
-    async pmSData(pmHeaderId) {
-        try {
-            const query = queries.getTestById;
-            const qParams = [pmHeaderId];
-            let pmData: any = await this.oraUtil.executeQuery(query, qParams);
-            pmData = pmData.rows;
-
-            const query1 = queries.getestById;
-            let headerData1: any = await this.oraUtil.executeQuery(query1, qParams);
-
-            const statusQuery = queries.getTestbyId;
-            const statusParams = [pmHeaderId];
-            let statusData: any = await this.oraUtil.executeQuery(statusQuery, statusParams);
-            const statusArray = statusData.rows.map(row => row.STATUS_ID);
-            for (let task of pmData) {
-                task.availablestatuses = statusArray;
-            }
-
-            return {
-                headerData: headerData1.rows,
-                pmtasks: pmData
-            };
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    async updatePmTasks(pmData) {
-        try {
-            const { pm_unid, pmtasks } = pmData;
-
-            // Update logic here, assuming you have an update query
-            const updateQuery = queries.updatePmTasks; // Ensure this query is defined in your qFactory
-            const updateParams = [pm_unid, ...pmtasks]; // Adjust according to your actual update logic
-
-            const result = await this.oraUtil.executeQuery(updateQuery, updateParams);
-
-            if (result.rowCount === 0) {
-                throw new Error('No tasks updated. Invalid PM UNID.');
-            }
-
-            return pmData; // Return updated pmData or any required structure
-        } catch (error) {
-            throw error;
-        }
-    }
-}
-==========================
-
-export const queries = {
-    // ...existing queries
-    updatePmTasks: `
-    UPDATE opspm.PM_TASK_LIST_ITEM
-    SET 
-        -- Set the fields to update based on the incoming data
-        DEFAULT_STATUS_ID = :defaultStatusId,
-        STATUS = :status,
-        -- Add other fields as necessary
-    WHERE 
-        PM_UNID = :pmUnid AND 
-        TASK_UNID = :taskUnid
-    `,
-};
+ PASS  src/updateTask/UpdateTask.controller.spec.ts (7.258 s)
+  ● Console
+                     
