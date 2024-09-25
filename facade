@@ -209,3 +209,136 @@ describe('PMService', () => {
       
     });
   });
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdatePmService } from './updatePm.service';
+import { RestClient } from '../common/util/restClient/restClient.service';
+
+describe('UpdatePmService', () => {
+  let service: UpdatePmService;
+  let restClient: RestClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdatePmService,
+        RestClient
+      ]
+    }).compile();
+
+    service = module.get<UpdatePmService>(UpdatePmService);
+    restClient = module.get<RestClient>(RestClient);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('updateDetails', () => {
+    it('should return data on success', async () => {
+      const url = 'http://taskService.iopTask/update/pmtasks';
+      const req = { body: {} };
+      const expectedResponse = { data: 'success' };
+
+      jest.spyOn(restClient, 'put').mockResolvedValue(expectedResponse);
+
+      const result = await service.updateDetails(req, url);
+
+      expect(restClient.put).toHaveBeenCalledWith(req.body, url);
+      expect(result).toEqual(expectedResponse);
+    });
+
+    it('should throw an error when the restClient fails', async () => {
+      const url = 'http://taskService.iopTask/update/pmtasks';
+      const req = { body: {} };
+      const error = new Error('RestClient error');
+
+      jest.spyOn(restClient, 'put').mockRejectedValue(error);
+
+      await expect(service.updateDetails(req, url)).rejects.toThrow('Failed to update: RestClient error');
+    });
+  });
+});
+===========================
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdatePmController } from './updatePm.controller';
+import { UpdatePmService } from './updatePm.service';
+import { Request, Response } from 'express';
+import { RestClient } from '../../src/common/util/restClient/restClient.service'; 
+import logger from '../common/logger/logger';
+import config from 'config';
+
+describe('UpdatePmController', () => {
+  let controller: UpdatePmController;
+  let service: UpdatePmService;
+  let loggerErrorSpy: jest.SpyInstance;
+
+  beforeEach(async () => {
+    const configMock = {
+      taskService: {
+        iopTask: 'http://taskService.iopTask'
+      },
+      iopPmService: {
+        url: 'http://iopPmService.url'
+      },
+      flag: false
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UpdatePmController],
+      providers: [
+        UpdatePmService,
+        RestClient,
+        {
+          provide: 'config',
+          useValue: configMock
+        }
+      ],
+    }).compile();
+
+    controller = module.get<UpdatePmController>(UpdatePmController);
+    service = module.get<UpdatePmService>(UpdatePmService);
+    loggerErrorSpy = jest.spyOn(logger, 'error');
+  });
+
+  afterEach(() => {
+    loggerErrorSpy.mockRestore();
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should update PM Task details', async () => {
+    const req = { body: {} } as Request;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as unknown as Response;
+
+    jest.spyOn(service, 'updateDetails').mockResolvedValue({ data: 'task details' });
+
+    await controller.updatePmDetails(req, res);
+
+    expect(service.updateDetails).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ data: 'task details' });
+  });
+
+  it('should return 500 status and log error if service throws an error', async () => {
+    const req = { body: {} } as Request;
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    } as unknown as Response;
+
+    const error = new Error('Service error');
+    jest.spyOn(service, 'updateDetails').mockRejectedValue(error);
+
+    await controller.updatePmDetails(req, res);
+
+    expect(loggerErrorSpy).toHaveBeenCalledWith('Error in updating tasks', error);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Error in updating tasks' });
+  });
+});
