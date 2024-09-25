@@ -1,0 +1,211 @@
+import { Controller,Param,Put, Body, Res, Req } from '@nestjs/common';
+import { Request,Response } from 'express'
+import {UpdatePmService} from './updatePm.service'
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+
+const config = require('config');
+const flag=config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+
+export class UpdatePmController {
+  constructor(private readonly updateservice: UpdatePmService) {}
+  
+//Update PM Task details
+@Put('/update/pmtasks')
+async updatePmDetails(
+  @Req() req: Request,
+  @Res() res: Response,
+) {
+  try {
+    let url: string;
+
+    if (flag) {
+      const url_task = config.taskService.iopTask;
+      const newUrl_task = `${url_task}/update/pmtasks`;
+
+       // Call service to update task
+       const taskServiceResponse = await this.updateservice.updateDetails(req, newUrl_task);
+       console.log("Message is ", taskServiceResponse);
+      
+      url = config.iopPmService.url;
+
+    } else {
+      console.log("only TASKSERVICE");
+      
+         url = config.taskService.iopTask;
+    }
+
+    const newUrl = `${url}/update/pmtasks`;
+
+    // call service to update pmtasks
+    const result=await this.updateservice.updateDetails(req, newUrl);
+
+    console.log("Service ",result)
+
+    return res.status(200).json(result);
+  } catch (error) {
+    logger.error('Error in updating tasks', error);
+    return res.status(500).json({error:'Error in updating tasks'});
+  }
+}
+}
+=====================
+import { Injectable } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+
+@Injectable()
+export class UpdatePmService {
+  constructor(private restClient: RestClient) {
+    this.updateDetails = this.updateDetails.bind(this);
+  }
+
+  async updateDetails(req, url: string) {
+    try {
+      const data = await this.restClient.put(req.body, url);
+      return data;
+    } catch (err) {
+      throw new Error(`Failed to update: ${err.message}`);
+    }
+  }
+}
++++++++++++++++++++++++++
+// pm.controller.spec.ts
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdatePmController } from './updatePm.controller';
+import { UpdatePmService } from './updatePm.service';
+import { HttpService} from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
+import { Request,Response } from 'express';
+import  config from 'config'
+import { RestClient } from '../../src/common/util/restClient/restClient.service'; 
+import { Res } from '@nestjs/common';
+import logger from '../common/logger/logger';
+
+
+describe('PMController', () => {
+  let controller: UpdatePmController;
+  let service: UpdatePmService;
+  let loggerErrorSpy:jest.SpyInstance;
+ 
+  beforeEach(async () => {
+const configMock={
+  get: jest.fn((key: string) => {
+    if (key === 'flag') {
+      return false; 
+    }
+    if (key === 'iopPmService.url') {
+      return 'http://iopPmService.url';
+    }
+    if (key === 'taskService.iopTask') {
+      return 'http://taskService.iopTask';
+    }
+  }),
+};
+    
+  const module: TestingModule = await Test.createTestingModule({
+      controllers: [UpdatePmController],
+      providers: [
+        UpdatePmService,
+        RestClient,
+        HttpService,
+        {
+          provide: 'config',
+          useValue: configMock
+        },
+        {
+          provide:'AXIOS_INSTANCE_TOKEN',
+          useValue:jest.fn(),
+        },
+      ],
+      imports:[HttpModule],
+    }).compile();
+    controller=module.get<UpdatePmController>(UpdatePmController);
+    service=module.get<UpdatePmService>(UpdatePmService);
+
+    loggerErrorSpy = jest.spyOn(logger,'error');
+
+  });
+  afterEach(()=>{
+    loggerErrorSpy.mockRestore();
+  });
+    it('should be defined', () => {
+      expect(controller).toBeDefined();
+    });
+        it('should update Pm Task details', async () => {
+                
+        const req = {} as Request;
+        const res = {} as Response;
+        const newUrl='http://taskService.iopTask/update/pmtasks';
+
+        (jest.spyOn(service, 'updateDetails')as jest.Mock).mockImplementation(()=>Promise.resolve({data:'task details'}) as Promise<{data:string}>);
+        await controller.updatePmDetails( req, res);
+  
+        const result=await controller.updatePmDetails(req,res);
+        expect(result).toEqual({data:'task details'});
+      });
+      it('should return 500 status and log error if service throws an error', async () => {
+      
+const req = {} as Request;
+       const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn().mockReturnThis(),
+        } as unknown as Response;
+        const error = new Error('Service error');
+        jest.spyOn(service, 'updateDetails').mockImplementation(() => {
+          throw error;
+        });
+  
+        await controller.updatePmDetails( req, res);
+  
+        expect(res.json).toHaveBeenCalledTimes(1);
+        expect(res.json).toHaveBeenCalledWith({error:'Error in updating tasks'});
+});      
+    });
+    
+  ==========================
+  import { Test, TestingModule } from '@nestjs/testing';
+import { UpdatePmService } from './updatePm.service';
+import { HttpService} from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
+import { RestClient } from '../common/util/restClient/restClient.service'; 
+import {of} from 'rxjs';
+
+describe('PMService', () => {
+    let service:UpdatePmService;
+    let restClient:RestClient;
+    beforeEach(async ()=>{
+        const module: TestingModule = await Test.createTestingModule({
+            providers:[UpdatePmService,RestClient,HttpService,{
+                provide:'AXIOS_INSTANCE_TOKEN',
+                useValue:jest.fn(),
+              },],
+              imports:[HttpModule],
+        }).compile();
+        service=module.get(UpdatePmService);
+        restClient=module.get(RestClient);
+    });
+    it('should be defined', async () => {
+      expect(service).toBeDefined();
+    });
+    describe('updateDetails',()=>{
+        it('should return data on success',async()=>{
+            const url='http://taskService.iopTask/update/pmtasks';
+            const data={data:'success'};
+            const req={};
+            const res={
+                status:jest.fn(()=>res),
+                send:jest.fn(),
+            };
+            (jest.spyOn(restClient, 'put')as jest.Mock).mockImplementation(()=>Promise.resolve({data:'success'}) as Promise<{data:string}>);
+            await service.updateDetails(req,res,url);
+            expect(res.status).toHaveBeenCalledTimes(1);
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledTimes(1);
+            expect(res.send).toHaveBeenCalledWith(data);
+        });
+      
+    });
+  });
