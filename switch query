@@ -1,0 +1,27 @@
+SELECT listname,frequency,switch,switch_unid,site_unid,numtasks,numtasksdone,startdate,stopdate,pm_unid,pmd_widget_id FROM (
+    SELECT
+        PMD_WIDGET_PM_DETAILS.LIST_NAME AS listname,
+        PMD_WIDGET_PM_DETAILS.FREQUENCY AS frequency,
+        PMD_WIDGET_PM_DETAILS.SWITCH_NAME AS switch,
+        PMD_WIDGET_PM_DETAILS.Switch_UNID AS switch_unid,
+        PMD_WIDGET_PM_DETAILS.SITE_UNID AS site_unid,
+        PMD_WIDGET_PM_DETAILS.NUM_OF_TASKS AS numtasks,
+        PMD_WIDGET_PM_DETAILS.NUM_OF_TASKS_DONE AS numtasksdone,
+        PMD_WIDGET_PM_DETAILS.START_DATE AS startdate,
+        PMD_WIDGET_PM_DETAILS.END_DATE AS stopdate,
+        PMD_WIDGET_PM_DETAILS.PM_UNID AS pm_unid,
+        PMD_WIDGET_PM_DETAILS.PMD_WIDGET_ID AS pmd_widget_id,
+        ROW_NUMBER() OVER (PARTITION BY PMD_WIDGET_PM_DETAILS.PM_UNID ORDER BY PMD_WIDGET_PM_DETAILS.PM_UNID) AS row_num
+    FROM
+        PMD_WIDGET_PM_DETAILS
+    LEFT JOIN
+        pmd_widget
+    ON
+        PMD_WIDGET_PM_DETAILS.PMD_WIDGET_ID = pmd_widget.PMD_WIDGET_ID
+    WHERE
+        PMD_WIDGET_PM_DETAILS.switch_unid = :switchUnid
+        AND PMD_WIDGET_PM_DETAILS.LIST_NAME LIKE '%Switch%'
+        AND PMD_WIDGET_PM_DETAILS.SITE_UNID IS null
+        AND PMD_WIDGET_PM_DETAILS.END_DATE > sysdate
+)
+WHERE row_num = 1`
