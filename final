@@ -1,0 +1,76 @@
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+import { log } from 'util';
+import logger from 'dist/config/Log.config';
+const config = require('config');
+
+@Injectable()
+export class PmMgrSummService {
+  constructor(private readonly restClient: RestClient) {}
+
+  // This service is responsible for getting information from TaskService
+  async getDetails(parameters: string ,url: string): Promise<any> {
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await this.restClient.get1(url, headers, '', {}, parameters).toPromise();
+            console.log(response);
+
+      return response.data; // Return the data for further processing
+    } catch (err) {
+      // Handle errors appropriately
+      throw new HttpException(
+        { message: 'Error in getting the details', error: err.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
+
+------------
+import { Controller, Get, Param, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+const config = require('config');
+const flag = config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+export class PmMgrSummController {
+  constructor(private readonly pmService: PmMgrSummService) {}
+
+  // Get PM Summary for Manager details
+  @Get('/mgr/:mgrId/pm/summary')
+  async getPmDetails(
+    @Param('mgrId') mgrId: string,
+    @Query('dueIn') dueIn: string, // Retrieve dueIn as a query parameter
+    @Res() res: Response,
+  ) {
+    try {
+      let url: string;
+      if (flag) {
+        url = config.iopPmService.url;
+      } else {
+        url = config.taskService.iopTask;
+      }
+
+      const newUrl = `${url}/mgr/${mgrId}/pm/summary`; // Append dueIn to the URL
+
+      const parameters = { dueIn };
+
+      // Call the service method to get the details
+      const result = await this.pmService.getDetails(dueIn,newUrl);
+
+      // Return the result with proper status
+      return res.status(200).json(result);
+    } catch (err) {
+      logger.error('Error in getting tasks', err);
+      return res.status(err.status || 500).json({ error: err.message || 'Error in getting tasks' });
+    }
+  }
+}
