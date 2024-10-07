@@ -1,1 +1,66 @@
 https://iop-dev.nss.vzwnet.com:8080/task/mgr/:mgrId/pm/summary
+import { Controller, Get, Param, Res, Req } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+const config = require('config');
+const flag = config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+export class PmMgrSummController {
+  constructor(private readonly pmService: PmMgrSummService) {}
+
+  //get PM Summary for Manager details
+  @Get('/mgr/:mgrId/pm/summary')
+  async getPmDetails(
+    @Param('mgrId') mgrId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    try {
+      let url;
+      if (flag) {
+        
+        url = config.iopPmService.url;
+      } else {
+        
+        url = config.taskService.iopTask;
+      }
+      const newUrl = url + `/mgr/:mgrId/pm/summary`;
+      return this.pmService.getDetails(req, res, newUrl);
+    } catch (err) {
+      logger.error('Error in getting tasks', err);
+      return res.status(500).json({error:'Error in getting tasks'});
+    }
+  }
+}
+
+======================================
+import { Injectable } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+const config = require('config');
+@Injectable()
+export class PmMgrSummService {
+  constructor(private restClient: RestClient) {
+    this.getDetails = this.getDetails.bind(this);
+  }
+  //This service is responsible to get information from TaskService
+  async getDetails(req, res, url) {
+    let headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+    await this.restClient
+      .get1(url, headers, '', '', '')
+      .toPromise()
+      .then(async (data) => {
+        let output = data.data;
+        res?.status(200).send(output);
+      })
+      .catch((err) => {
+        res.status(500).json('Error in getting the details', err);
+      });
+  }
+}
