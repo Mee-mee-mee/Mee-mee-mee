@@ -106,3 +106,32 @@ export class PmMgrSummController {
     }
   }
 }
+
+---
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+const config = require('config');
+
+@Injectable()
+export class PmMgrSummService {
+  constructor(private readonly restClient: RestClient) {}
+
+  // This service is responsible for getting information from TaskService
+  async getDetails(url: string): Promise<any> {
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await this.restClient.get1(url, headers, '', '', '').toPromise();
+      return response.data; // Return the data for further processing
+    } catch (err) {
+      // Handle errors appropriately
+      throw new HttpException(
+        { message: 'Error in getting the details', error: err.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
