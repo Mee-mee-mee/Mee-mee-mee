@@ -318,3 +318,19 @@ export class PmMgrSummController {
         ]
     }
 }
+******************************
+ get1(baseURL: any, headers?: any, url?: any,requestConfig?:any,parameters?:any):Observable<any> {
+      try{  logger.debug("baseURL:",baseURL)
+    const axiosconfig: AxiosRequestConfig = {
+      baseURL: baseURL,
+      headers: headers,
+      params:parameters    
+    };
+    // logger.debug("return")
+    // console.log(baseURL," Testing in HTTP ");
+    return this.httpService.get(url, axiosconfig);
+    } catch (error){
+    logger.error("async get err-->", error)
+    return error
+    }
+    }
