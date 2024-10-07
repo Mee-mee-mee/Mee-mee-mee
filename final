@@ -376,3 +376,68 @@ describe('PmMgrSummController', () => {
     });
   });
 });
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummController } from './pmMgrSum.controller';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { HttpException } from '@nestjs/common';
+import { Response } from 'express';
+
+describe('PmMgrSummController', () => {
+  let controller: PmMgrSummController;
+  let service: PmMgrSummService;
+
+  const mockResponse = (): Partial<Response> => {
+    return {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmMgrSummController],
+      providers: [
+        {
+          provide: PmMgrSummService,
+          useValue: {
+            getDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<PmMgrSummController>(PmMgrSummController);
+    service = module.get<PmMgrSummService>(PmMgrSummService);
+  });
+
+  describe('getPmDetails', () => {
+    it('should return data successfully', async () => {
+      const res = mockResponse() as Response; // Type assertion
+      const mgrId = '1';
+      const duein = 'eoy';
+      const resultData = { data: 'some data' };
+
+      jest.spyOn(service, 'getDetails').mockResolvedValue(resultData);
+
+      await controller.getPmDetails(mgrId, duein, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(resultData);
+    });
+
+    it('should handle errors', async () => {
+      const res = mockResponse() as Response; // Type assertion
+      const mgrId = '1';
+      const duein = 'eoy';
+      const errorMessage = 'Error fetching data';
+
+      jest.spyOn(service, 'getDetails').mockRejectedValue(new HttpException(errorMessage, 500));
+
+      await controller.getPmDetails(mgrId, duein, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: errorMessage });
+    });
+  });
+});
