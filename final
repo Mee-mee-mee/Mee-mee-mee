@@ -194,3 +194,68 @@ describe('PmMgrSummController', () => {
   });
 });
 ============
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummController } from './pmMgrSum.controller';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { HttpException } from '@nestjs/common';
+import { Response } from 'express';
+
+describe('PmMgrSummController', () => {
+  let controller: PmMgrSummController;
+  let service: PmMgrSummService;
+
+  const mockResponse = () => {
+    return {
+      status: jest.fn().mockReturnThis(), // Chainable
+      json: jest.fn(), // Returns nothing but allows for a call
+    };
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmMgrSummController],
+      providers: [
+        {
+          provide: PmMgrSummService,
+          useValue: {
+            getDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<PmMgrSummController>(PmMgrSummController);
+    service = module.get<PmMgrSummService>(PmMgrSummService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getPmDetails', () => {
+    it('should return a summary', async () => {
+      const res = mockResponse();
+      const mgrId = 'testMgrId';
+      const duein = 'eoy';
+
+      jest.spyOn(service, 'getDetails').mockResolvedValue({ key: 'value' });
+
+      await controller.getPmDetails(mgrId, duein, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ key: 'value' });
+    });
+
+    it('should handle errors', async () => {
+      const res = mockResponse();
+      const mgrId = 'testMgrId';
+      const duein = 'eoy';
+      const errorMessage = 'Error in getting tasks';
+
+      jest.spyOn(service, 'getDetails').mockRejectedValue(new HttpException(errorMessage, 500));
+
+      await controller.getPmDetails(mgrId, duein, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: errorMessage });
+    });
+  });
+});
