@@ -259,3 +259,120 @@ describe('PmMgrSummController', () => {
     });
   });
 });
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { RestClient } from '../common/util/restClient/restClient.service';
+import { HttpException } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+
+describe('PmMgrSummService', () => {
+  let service: PmMgrSummService;
+  let restClient: RestClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PmMgrSummService,
+        {
+          provide: RestClient,
+          useValue: {
+            get1: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<PmMgrSummService>(PmMgrSummService);
+    restClient = module.get<RestClient>(RestClient);
+  });
+
+  describe('getDetails', () => {
+    it('should return data when get1 is successful', async () => {
+      const parameters = { duein: 'eoy' };
+      const url = 'http://example.com/mgr/1/pm/summary';
+      const responseData = { data: 'some data' };
+
+      jest.spyOn(restClient, 'get1').mockReturnValue(of(responseData));
+
+      const result = await service.getDetails(parameters, url);
+
+      expect(result).toEqual(responseData);
+    });
+
+    it('should throw HttpException when get1 fails', async () => {
+      const parameters = { duein: 'eoy' };
+      const url = 'http://example.com/mgr/1/pm/summary';
+      const errorResponse = { message: 'Error fetching data' };
+
+      jest.spyOn(restClient, 'get1').mockReturnValue(throwError(errorResponse));
+
+      await expect(service.getDetails(parameters, url)).rejects.toThrow(HttpException);
+    });
+  });
+});
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummController } from './pmMgrSum.controller';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { Response } from 'express';
+import { HttpException } from '@nestjs/common';
+
+describe('PmMgrSummController', () => {
+  let controller: PmMgrSummController;
+  let service: PmMgrSummService;
+
+  const mockResponse = () => {
+    return {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmMgrSummController],
+      providers: [
+        {
+          provide: PmMgrSummService,
+          useValue: {
+            getDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<PmMgrSummController>(PmMgrSummController);
+    service = module.get<PmMgrSummService>(PmMgrSummService);
+  });
+
+  describe('getPmDetails', () => {
+    it('should return data successfully', async () => {
+      const res = mockResponse();
+      const mgrId = '1';
+      const duein = 'eoy';
+      const resultData = { data: 'some data' };
+
+      jest.spyOn(service, 'getDetails').mockResolvedValue(resultData);
+
+      await controller.getPmDetails(mgrId, duein, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(resultData);
+    });
+
+    it('should handle errors', async () => {
+      const res = mockResponse();
+      const mgrId = '1';
+      const duein = 'eoy';
+      const errorMessage = 'Error fetching data';
+
+      jest.spyOn(service, 'getDetails').mockRejectedValue(new HttpException(errorMessage, 500));
+
+      await controller.getPmDetails(mgrId, duein, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: errorMessage });
+    });
+  });
+});
