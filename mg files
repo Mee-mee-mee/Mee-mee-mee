@@ -372,3 +372,47 @@ export class PmMgrSummService {
     
   }
 }
+**************
+import { Controller, Get, Param, Query, Req, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+const config = require('config');
+const flag = config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+export class PmMgrSummController {
+  constructor(private readonly pmService: PmMgrSummService) {}
+
+  // Get PM Summary for Manager details
+  @Get('/mgr/:mgrId/pm/summary')
+  async getPmDetails(
+    @Param('mgrId') mgrId: string,
+    @Query('dueIn') dueIn: string, 
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    try {
+      let url: string;
+      if (flag) {
+        url = config.iopPmService.url;
+      } else {
+        url = config.taskService.iopTask;
+      }
+
+      const newUrl = `${url}/mgr/${mgrId}/pm/summary?dueIn=${dueIn}`; 
+
+      // Call the service method to get the details
+      
+      const result = await this.pmService.getDetails(req,res,newUrl);
+
+      // Return the result with proper status
+      return res.status(200).json(result);
+    } catch (err) {
+      logger.error('Error in getting tasks', err);
+      return res.status(err.status || 500).json({ error: err.message || 'Error in getting tasks' });
+    }
+  }
+}
