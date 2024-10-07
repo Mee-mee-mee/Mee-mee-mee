@@ -75,3 +75,122 @@ export class PmMgrSummController {
     }
   }
 }
+=============
+service.test
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { RestClient } from '../common/util/restClient/restClient.service';
+import { HttpException } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+
+describe('PmMgrSummService', () => {
+  let service: PmMgrSummService;
+  let restClient: RestClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PmMgrSummService,
+        {
+          provide: RestClient,
+          useValue: {
+            get1: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<PmMgrSummService>(PmMgrSummService);
+    restClient = module.get<RestClient>(RestClient);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('getDetails', () => {
+    it('should return data from the API', async () => {
+      const mockResponse = { data: { key: 'value' } };
+      jest.spyOn(restClient, 'get1').mockReturnValue(of(mockResponse));
+
+      const result = await service.getDetails({ duein: 'eoy' }, 'http://mockurl');
+      expect(result).toEqual(mockResponse.data);
+      expect(restClient.get1).toHaveBeenCalled();
+    });
+
+    it('should throw HttpException on error', async () => {
+      const errorResponse = { message: 'Error in getting details' };
+      jest.spyOn(restClient, 'get1').mockReturnValue(throwError(() => errorResponse));
+
+      await expect(service.getDetails({ duein: 'eoy' }, 'http://mockurl')).rejects.toThrow(HttpException);
+    });
+  });
+});
+=============
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummController } from './pmMgrSum.controller';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { HttpException } from '@nestjs/common';
+import { Response } from 'express';
+
+describe('PmMgrSummController', () => {
+  let controller: PmMgrSummController;
+  let service: PmMgrSummService;
+
+  const mockResponse = () => {
+    return {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmMgrSummController],
+      providers: [
+        {
+          provide: PmMgrSummService,
+          useValue: {
+            getDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<PmMgrSummController>(PmMgrSummController);
+    service = module.get<PmMgrSummService>(PmMgrSummService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getPmDetails', () => {
+    it('should return a summary', async () => {
+      const res = mockResponse();
+      const mgrId = 'testMgrId';
+      const duein = 'eoy';
+
+      jest.spyOn(service, 'getDetails').mockResolvedValue({ key: 'value' });
+
+      await controller.getPmDetails(mgrId, duein, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ key: 'value' });
+    });
+
+    it('should handle errors', async () => {
+      const res = mockResponse();
+      const mgrId = 'testMgrId';
+      const duein = 'eoy';
+      const errorMessage = 'Error in getting tasks';
+
+      jest.spyOn(service, 'getDetails').mockRejectedValue(new HttpException(errorMessage, 500));
+
+      await controller.getPmDetails(mgrId, duein, res);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: errorMessage });
+    });
+  });
+});
+============
