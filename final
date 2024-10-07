@@ -74,3 +74,5 @@ export class PmMgrSummController {
     }
   }
 }
+------------------
+level":"error","message":"Error in getting tasks Error in getting the details","name":"HttpException","response":{"error":"target must be an object","message":"Error in getting the details
