@@ -1,0 +1,320 @@
+serv
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+const config = require('config');
+
+@Injectable()
+export class PmMgrSummService {
+  constructor(private readonly restClient: RestClient) {}
+
+  // This service is responsible for getting information from TaskService
+  async getDetails(url: string): Promise<any> {
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await this.restClient.get1(url, headers, '', '', '').toPromise();
+      return response.data; // Return the data for further processing
+    } catch (err) {
+      // Handle errors appropriately
+      throw new HttpException(
+        { message: 'Error in getting the details', error: err.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
+====================
+contrl
+import { Controller, Get, Param, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+const config = require('config');
+const flag = config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+export class PmMgrSummController {
+  constructor(private readonly pmService: PmMgrSummService) {}
+
+  // Get PM Summary for Manager details
+  @Get('/mgr/:mgrId/pm/summary')
+  async getPmDetails(
+    @Param('mgrId') mgrId: string,
+    @Query('dueIn') dueIn: string, // Retrieve dueIn as a query parameter
+    @Res() res: Response,
+  ) {
+    try {
+      let url: string;
+      if (flag) {
+        url = config.iopPmService.url;
+      } else {
+        url = config.taskService.iopTask;
+      }
+
+      const newUrl = `${url}/mgr/${mgrId}/pm/summary?dueIn=${dueIn}`; // Append dueIn to the URL
+
+      // Call the service method to get the details
+      const result = await this.pmService.getDetails(newUrl);
+
+      // Return the result with proper status
+      return res.status(200).json(result);
+    } catch (err) {
+      logger.error('Error in getting tasks', err);
+      return res.status(err.status || 500).json({ error: err.message || 'Error in getting tasks' });
+    }
+  }
+}
+====
+{
+    "app": {
+        "port": 5177,
+        "env": "default"
+    },
+    "iopDbConfig": {
+        "host": "cospiopdd-scan.nss.vzwnet.com",
+        "port": 1521,
+        "dbName": "svc_iop_app_high_01",
+        "user": "iopadmin",
+        "password": "",
+        "poolMax": 10,
+        "poolIncrement": 4,
+        "poolTimeout": 3000,
+        "queueTimeout": 0,
+        "stmtCacheSize": 60000,
+        "connectString": "cospiopdd-scan.nss.vzwnet.com:1521/svc_iop_app_high_01",
+        "poolAlias": "default"
+    },
+    "data": {
+        "taskcounts": [
+            {
+                "techid": "angelfr",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 1402,
+                            "done": 1022,
+                            "perc": 72.9
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "browvi1",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 855,
+                            "done": 616,
+                            "perc": 72.05
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "burnma7",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 935,
+                            "done": 704,
+                            "perc": 75.29
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "davith5",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 0,
+                            "done": 0,
+                            "perc": 100
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "deehake",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 0,
+                            "done": 0,
+                            "perc": 100
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "downeja",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 1073,
+                            "done": 955,
+                            "perc": 89
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "kelledu",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 990,
+                            "done": 964,
+                            "perc": 97.37
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "knighke",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 0,
+                            "done": 0,
+                            "perc": 100
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "mcquiro",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 1168,
+                            "done": 873,
+                            "perc": 74.74
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "oharama",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 0,
+                            "done": 0,
+                            "perc": 100
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "reedebr",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 924,
+                            "done": 470,
+                            "perc": 50.87
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "rieljon",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 671,
+                            "done": 508,
+                            "perc": 75.71
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "sawyesc",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 1199,
+                            "done": 911,
+                            "perc": 75.98
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "wightro",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 1114,
+                            "done": 726,
+                            "perc": 65.17
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "wilke2c",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 937,
+                            "done": 320,
+                            "perc": 34.15
+                        }
+                    }
+                ]
+            },
+            {
+                "techid": "zielfti",
+                "tasks": [
+                    {
+                        "duein": "eoy",
+                        "pm": {
+                            "total": 1003,
+                            "done": 833,
+                            "perc": 83.05
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "flag": false,
+    "iopPmService": {
+        "url": "http://localhost:5178/ioppm"
+    },
+    "taskService": {
+        "iopTask": "https://iop-dev.nss.vzwnet.com:8080/task"
+    },
+    "log": {
+        "directory": "/usr/apps/iop/apps/logs",
+        "baseFileName": "iop-pm-facade-service",
+        "levels": [
+            "debug",
+            "info",
+            "error"
+        ]
+    }
+}
