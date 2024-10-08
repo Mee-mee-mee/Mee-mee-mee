@@ -96,3 +96,8 @@ export const queries = {
         GROUP BY techid
     `
 };
+=============
+select TECHNICIAN_ID,MANAGER_ID from opspm.PM_LOCATION_TASK;
+
+ 
+select NUM_OF_TASKS_DONE,NUM_OF_TASKS from PMD_WIDGET_PM_DETAILS; 
