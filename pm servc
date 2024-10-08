@@ -1,0 +1,146 @@
+
+import { Controller, Param, Get, Req, Res } from '@nestjs/common';
+import { PmMgrSummService } from './pmMgrSumm.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+const config = require('config');
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmMgrSummController {
+    constructor(private PmMgrSummService: PmMgrSummService) { }
+    // Get PM Summary for Manager details
+    @Get('/mgr/:mgrId/pm/summary')
+    async getTasksByPm(
+        @Param('mgrId') mgrId: string,
+        @Query('duein') duein: string,
+
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        try {
+
+            const parameters = { duein };
+            const pmData: any = await this.PmMgrSummService.PmData(duein, mgrId);
+            config.pmData;
+
+            if (pmData.length == 0) {
+                return res.status(204).send();
+            } else {
+                return res.send(pmData);
+            }
+        } catch (err) {
+            logger.error(' Not able to get Summary of Mgr for PM ', err);
+            return res.status(500).json(err);
+        }
+    }
+}
+=========================
+import { Injectable } from '@nestjs/common';
+import PmMgrSummRepo from './pmMgrSumm.repo';
+
+@Injectable()
+export class PmMgrSummService {
+    constructor(private PmMgrRepo: PmMgrSummRepo) { }
+
+
+
+    async PmData(mgrId) {
+        try {
+            const data = await this.PmMgrRepo.getPmMgrSumm(mgrId);
+
+            // Convert keys to lowercase and wrap data inside pmlist
+            const transformedData = data.map(item => {
+                const lowerCaseItem = {};
+                for (const key in item) {
+                    if (item.hasOwnProperty(key)) {
+                        lowerCaseItem[key.toLowerCase()] = item[key];
+                    }
+                }
+                return lowerCaseItem;
+            });
+
+            return { taskcounts: transformedData };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+====================
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmMgrSumm.qfactory';
+
+@Injectable()
+export default class PmMgrRepo {
+    constructor(private oraUtil: Oracle) { }
+
+    async getPmMgrSumm(mgrId) {
+        try {
+            const query = queries.getPmMgrSumm;
+            const qParams = [mgrId];
+            let data: any = await this.oraUtil.executeQuery(query, qParams);
+            data = data.rows;
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+=================
+export const queries = {
+    getPmMgrSumm:
+        ` 
+    `
+}
+==============
+{ "taskcounts": [ { "techid": "angelfr", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 1402, "done": 1022, "perc": 72.9 }
+} ] }, { "techid": "browvi1", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 855, "done": 616, "perc": 72.05 }
+} ] }, { "techid": "burnma7", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 935, "done": 704, "perc": 75.29 }
+} ] }, { "techid": "davith5", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 0, "done": 0, "perc": 100 }
+} ] }, { "techid": "deehake", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 0, "done": 0, "perc": 100 }
+} ] }, { "techid": "downeja", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 1073, "done": 955, "perc": 89 }
+} ] }, { "techid": "kelledu", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 990, "done": 964, "perc": 97.37 }
+} ] }, { "techid": "knighke", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 0, "done": 0, "perc": 100 }
+} ] }, { "techid": "mcquiro", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 1168, "done": 873, "perc": 74.74 }
+} ] }, { "techid": "oharama", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 0, "done": 0, "perc": 100 }
+} ] }, { "techid": "reedebr", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 924, "done": 470, "perc": 50.87 }
+} ] }, { "techid": "rieljon", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 671, "done": 508, "perc": 75.71 }
+} ] }, { "techid": "sawyesc", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 1199, "done": 911, "perc": 75.98 }
+} ] }, { "techid": "wightro", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 1114, "done": 726, "perc": 65.17 }
+} ] }, { "techid": "wilke2c", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 937, "done": 320, "perc": 34.15 }
+} ] }, { "techid": "zielfti", "tasks": [ { "duein": "eoy", "pm":
+
+{ "total": 1003, "done": 833, "perc": 83.05 }
+} ] } ] }
