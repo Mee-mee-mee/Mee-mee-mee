@@ -101,3 +101,25 @@ select TECHNICIAN_ID,MANAGER_ID from opspm.PM_LOCATION_TASK;
 
  
 select NUM_OF_TASKS_DONE,NUM_OF_TASKS from PMD_WIDGET_PM_DETAILS; 
+==========
+export const queries = {
+    getPmMgrSumm: `
+        SELECT 
+            pl.TECHNICIAN_ID AS techid,
+            SUM(pmd.NUM_OF_TASKS_DONE) AS total,
+            SUM(pmd.NUM_OF_TASKS) AS done,
+            CASE 
+                WHEN SUM(pmd.NUM_OF_TASKS) > 0 THEN 
+                    ROUND(SUM(pmd.NUM_OF_TASKS_DONE) * 100.0 / SUM(pmd.NUM_OF_TASKS), 2)
+                ELSE 0 
+            END AS perc
+        FROM 
+            opspm.PM_LOCATION_TASK pl
+        JOIN 
+            PMD_WIDGET_PM_DETAILS pmd ON pl.TECHNICIAN_ID = pmd.TECHNICIAN_ID
+        WHERE 
+            pl.MANAGER_ID = :mgrId
+        GROUP BY 
+            pl.TECHNICIAN_ID
+    `
+};
