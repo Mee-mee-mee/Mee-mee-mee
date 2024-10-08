@@ -1,0 +1,98 @@
+import { Controller, Param, Get, Query, Req, Res } from '@nestjs/common';
+import { PmMgrSummService } from './pmMgrSumm.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmMgrSummController {
+    constructor(private readonly pmMgrSummService: PmMgrSummService) {}
+
+    // Get PM Summary for Manager details
+    @Get('/mgr/:mgrId/pm/summary')
+    async getTasksByPm(
+        @Param('mgrId') mgrId: string,
+        @Query('duein') duein: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        try {
+            const pmData = await this.pmMgrSummService.PmData(mgrId, duein);
+            if (pmData.taskcounts.length === 0) {
+                return res.status(204).send();
+            }
+            return res.json(pmData);
+        } catch (err) {
+            logger.error('Not able to get Summary of Manager for PM', err);
+            return res.status(500).json({ message: 'Internal server error', error: err });
+        }
+    }
+}
+============
+import { Injectable } from '@nestjs/common';
+import PmMgrSummRepo from './pmMgrSumm.repo';
+
+@Injectable()
+export class PmMgrSummService {
+    constructor(private readonly pmMgrRepo: PmMgrSummRepo) {}
+
+    async PmData(mgrId: string, duein: string) {
+        try {
+            const data = await this.pmMgrRepo.getPmMgrSumm(mgrId, duein);
+
+            // Transform the data to the desired response format
+            const taskCounts = data.map(item => {
+                return {
+                    techid: item.techid, // Assuming techid is part of the data returned
+                    tasks: [
+                        {
+                            duein: duein, // Use the duein from the query parameter
+                            pm: {
+                                total: item.total, // Assuming 'total' comes from your data
+                                done: item.done, // Assuming 'done' comes from your data
+                                perc: item.perc, // Assuming 'perc' comes from your data
+                            },
+                        },
+                    ],
+                };
+            });
+
+            return { taskcounts: taskCounts };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+============
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmMgrSumm.qfactory';
+
+@Injectable()
+export default class PmMgrRepo {
+    constructor(private readonly oraUtil: Oracle) {}
+
+    async getPmMgrSumm(mgrId: string, duein: string) {
+        try {
+            const query = queries.getPmMgrSumm;
+            const qParams = [mgrId, duein]; // Ensure your query uses these parameters
+            let data: any = await this.oraUtil.executeQuery(query, qParams);
+            return data.rows || [];
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+==========
+export const queries = {
+    getPmMgrSumm: `
+        SELECT techid, 
+               SUM(total) as total, 
+               SUM(done) as done, 
+               AVG(perc) as perc 
+        FROM your_table_name 
+        WHERE manager_id = :mgrId AND duein = :duein
+        GROUP BY techid
+    `
+};
