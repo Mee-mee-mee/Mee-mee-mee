@@ -1,0 +1,92 @@
+import { Controller, Param, Get, Query, Req, Res } from '@nestjs/common';
+import { PmTechSummService } from './pmTechSumm.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmTechSummController {
+    constructor(private readonly pmTechSummService: PmTechSummService) { }
+
+    // Get PM Summary for Manager details
+    @Get('/tech/:techId/pm/summary')
+    async getTasksByPm(
+        @Param('techId') techId: string,
+        @Query('duein') duein: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        try {
+            const pmData = await this.pmTechSummService.PmData(techId, duein);
+            if (pmData.taskcounts.length === 0) {
+                return res.status(204).send();
+            }
+            return res.json(pmData);
+        } catch (err) {
+            logger.error('Not able to get Summary of Tech for PM', err);
+            return res.status(500).json({ message: 'Internal server error', error: err });
+        }
+    }
+}
+---------------------
+import { Injectable } from '@nestjs/common';
+import PmTechSummRepo from './pmTechSumm.repo';
+
+@Injectable()
+export class PmTechSummService {
+    constructor(private readonly pmTechRepo: PmTechSummRepo) { }
+
+    async PmData(techId: string, duein: string) {
+        try {
+            const data = await this.pmTechRepo.getPmTechSumm(techId, duein);
+
+            // Transform the data to the desired response format
+            const taskCounts = data.map(item => {
+                return {
+                    techid: item.techid,
+                    tasks: [
+                        {
+                            duein: duein,
+                            pm: {
+                                total: item.total,
+                                done: item.done,
+                                perc: item.perc,
+                            },
+                        },
+                    ],
+                };
+            });
+
+            return { taskcounts: taskCounts };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+--------------
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmTechSumm.qfactory';
+
+@Injectable()
+export default class PmTechRepo {
+    constructor(private readonly oraUtil: Oracle) { }
+
+    async getPmTechSumm(techId: string, duein: string) {
+        try {
+            const query = queries.getPmTechSumm;
+            const qParams = [techId, duein];
+            let data: any = await this.oraUtil.executeQuery(query, qParams);
+            return data.rows || [];
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+-------------
+export const queries = {
+    getPmTechSumm:
+        `SELECT 
+     where pmd_widget_pm_details.site_unid =:siteUnid `
+}
