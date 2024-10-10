@@ -37,9 +37,9 @@ import PmTechRepo from './pmTechSumm.repo';
 export class PmTechSummService {
     constructor(private readonly pmTechRepo: PmTechRepo) {}
 
-    async PmData(siteUnid: string, duein: string) {
+    async PmData(techId: string, duein: string) {
         try {
-            const data = await this.pmTechRepo.getPmTechSumm(siteUnid, duein);
+            const data = await this.pmTechRepo.getPmTechSumm(techId, duein);
 
             // Transform the data to the desired response format
             const taskCounts = data.map(item => ({
@@ -61,10 +61,11 @@ export class PmTechSummService {
 
             return { taskcounts: taskCounts };
         } catch (error) {
-            throw new Error(`Failed to fetch PM Data for siteUnid: ${siteUnid} due to ${error.message}`);
+            throw new Error(`Failed to fetch PM Data for techId: ${techId} due to ${error.message}`);
         }
     }
 }
+
 ======
 import { Injectable } from '@nestjs/common';
 import { Oracle } from '../common/database/oracle';
@@ -74,14 +75,14 @@ import { queries } from './pmTechSumm.qfactory';
 export default class PmTechRepo {
     constructor(private readonly oraUtil: Oracle) {}
 
-    async getPmTechSumm(siteUnid: string, duein: string) {
+    async getPmTechSumm(techId: string, duein: string) {
         try {
-            if (!siteUnid || !duein) {
-                throw new Error('Invalid input parameters: siteUnid and duein are required.');
+            if (!techId || !duein) {
+                throw new Error('Invalid input parameters: techId and duein are required.');
             }
 
             const query = queries.getPmTechSumm;
-            const qParams = [siteUnid, duein];
+            const qParams = [techId, duein];
 
             const data: any = await this.oraUtil.executeQuery(query, qParams);
             return data.rows || [];
@@ -90,18 +91,27 @@ export default class PmTechRepo {
         }
     }
 }
+
 ==========
 export const queries = {
     getPmTechSumm: `
         SELECT 
-            techid,
-            total,
-            done,
-            perc
+            site_unid,
+            siteid,
+            site_name,
+            switch,
+            COUNT(*) AS total,
+            SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
+            CASE 
+                WHEN COUNT(*) > 0 THEN (SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) / COUNT(*)) * 100 
+                ELSE 0 
+            END AS perc
         FROM 
-            pmd_widget_pm_details 
+            pmd_widget_pm_details
         WHERE 
-            site_unid = :siteUnid 
-            AND due_date = :duein
+            tech_id = :techId
+            AND due_in = :duein
+        GROUP BY 
+            site_unid, siteid, site_name, switch
     `
 };
