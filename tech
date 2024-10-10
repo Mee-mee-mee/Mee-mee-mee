@@ -90,3 +90,920 @@ export const queries = {
         `SELECT 
      where pmd_widget_pm_details.site_unid =:siteUnid `
 }
+------------------------
+{
+    "taskcounts": [
+        {
+            "site_unid": "C85179B4CA3FC1E9FF5D923131F1EE97",
+            "siteid": "157893",
+            "site_name": "HYLAN AVE - A",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "ABA7780429C304BBC8BA09B7F3657887",
+            "siteid": "0",
+            "site_name": "IBR: NA WALMART ROCKINGHAM",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "25B0C9673E0B5409F503E6E4559F2CC2",
+            "siteid": "757972",
+            "site_name": "INB_SCO_NC_SCOTLANDHEALTHCARE NODE A [SPIDERNET]",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 12,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "DE83B9FDB4B606BA871556FD3CBA63AD",
+            "siteid": "157795",
+            "site_name": "LEDBETTER",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "6134280906BEBA9ACC211D2894A986F0",
+            "siteid": "157261",
+            "site_name": "NA CHAMPLAIN",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 12,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "42B308881FB512368A4BDC1BDF5B9000",
+            "siteid": "157002",
+            "site_name": "NA DEERCROFT UD",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "49BE95531AA0154D4D32836A46500D0F",
+            "siteid": "157282",
+            "site_name": "NA GIBSON",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "8F79E0EBD3F67BAE54327544E2F88454",
+            "siteid": "157274",
+            "site_name": "NA HAMLET",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "D78CD3994993EF0F5E1E20EE8AF6F92B",
+            "siteid": "157238",
+            "site_name": "NA HOLMES",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "23D48A9163258414824209D9CD4A38EB",
+            "siteid": "157040",
+            "site_name": "NA HONEYSUCKER",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "3FD31F36EE239D5765570C9F9E9BBBFA",
+            "siteid": "157015",
+            "site_name": "NA HWY 15",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 15,
+                        "done": 15,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "E81C8509371E0CCF8D47B778E78F8E06",
+            "siteid": "757712",
+            "site_name": "NA INB RIC NC FIRSTHEALTH NODE A",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 12,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "44F295F3572A3CF338A407A6BBAA7EA9",
+            "siteid": "157260",
+            "site_name": "NA JEFFERSON PARK",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "276EBBA7ED6AD6FF1FE08452902550BF",
+            "siteid": "157387",
+            "site_name": "NA JOHNS MILL",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "F3E5D7536B6C37BD62D17C7E801F930D",
+            "siteid": "157224",
+            "site_name": "NA LAUREL HILL",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "A6E2552A16CFF68ED2874E69392298BA",
+            "siteid": "157063",
+            "site_name": "NA LAURINBURG 1",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "D74B149ECBB05A424CB4197E21CE5FD9",
+            "siteid": "157627",
+            "site_name": "NA LAURINBURG SOUTH",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 15,
+                        "done": 15,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "E965E37360E269A9FC7B7718E39E281E",
+            "siteid": "157126",
+            "site_name": "NA MAPLEWOOD [ROCKINGHAM]",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 15,
+                        "done": 13,
+                        "perc": 86.67
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "479CECA0BC0B94BB0AE36F684C2F666D",
+            "siteid": "157384",
+            "site_name": "NA MAXTON",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "BE77BCA30368A1D9A2BB1FBBA40EE223",
+            "siteid": "157379",
+            "site_name": "NA MIDDLETON",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "44FA2DDA13A441E4E02A0ABBFC7AA8FD",
+            "siteid": "157202",
+            "site_name": "NA PEELES CHAPEL",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "30C938CB192528183A90AB0B2211ED8D",
+            "siteid": "157482",
+            "site_name": "NA ROCK",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "5D8607831E2C9FEB01B76C9501F7D82C",
+            "siteid": "157052",
+            "site_name": "NA ROCKINGHAM BYP",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "3855A8A5D232198FB0E3FAB340D7B6F2",
+            "siteid": "157276",
+            "site_name": "NA ROCKINGHAM RACEWAY",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "EC70F2CCB97B0AD6E603B3AED8C2B62A",
+            "siteid": "157941",
+            "site_name": "NA S_RANDOLPH_ST",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 12,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "FA99927CCDDBBA419BAA68F63A68E46C",
+            "siteid": "157372",
+            "site_name": "NA SANDY",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "DC16C081829767F15ACB890EDB79BC11",
+            "siteid": "157321",
+            "site_name": "NA SILVER SPRINGS PCS",
+            "switch": "Charlotte (MTX3)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "ACDE332F61F11B66C50426A802108D22",
+            "siteid": "156051",
+            "site_name": "CALLOWAY - A",
+            "switch": "Raleigh (MTX8)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "D59980DC375741EAA5FACF680E4C203D",
+            "siteid": "156796",
+            "site_name": "NA BOWMORE PCS",
+            "switch": "Raleigh (MTX8)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "CE711C22037C67A8FFA521C92CD40474",
+            "siteid": "156427",
+            "site_name": "NA MCCAIN [ALLTEL]",
+            "switch": "Raleigh (MTX8)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 12,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "998A95062DA0F508FDA79924CA293D89",
+            "siteid": "156364",
+            "site_name": "NA POPE AIR BASE [ALLTEL REV]",
+            "switch": "Raleigh (MTX8)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "D0FD2C35FBA44473E103749094943D75",
+            "siteid": "0",
+            "site_name": "NA RAEFORD (Alltel) [Tower Only]",
+            "switch": "Raleigh (MTX8)",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 10,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "A7C618A79DD97E79A5D100421FC5C55D",
+            "siteid": "1557880",
+            "site_name": "CARBONTON BRANCH",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "C030192065033C8B52368FF89E563FCE",
+            "siteid": "155491",
+            "site_name": "CLYDER_STONE",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "99D5CBCA095BAE0EBBF1C8278626D6B1",
+            "siteid": "155520",
+            "site_name": "DAS: INB MOORE REGIONAL HOSPITAL",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 12,
+                        "done": 8,
+                        "perc": 66.67
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "A8A4EDE72A0090A88E232A9F66F905CD",
+            "siteid": "155423",
+            "site_name": "DORMIE_GOLF_CLUB",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "82CA62C718756715936BE4975D024F76",
+            "siteid": "0",
+            "site_name": "IBR:  MOORE REGIONAL REPEATER 850",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "AC8D58A86ED4DF2912C98BD23AFE94F7",
+            "siteid": "0",
+            "site_name": "IBR: NA CATERPILLAR SANFORD",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "78323938B5D559A2DFE2A45A9084CEB3",
+            "siteid": "0",
+            "site_name": "IBR: NA LEE COUNTY SCHOOLS",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "FC62B848CAAD43A2B65106F961FF5EB4",
+            "siteid": "0",
+            "site_name": "IBR: NA MOEN IBA",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "90A7728CBE5A076EE2B889884DA3F5D8",
+            "siteid": "0",
+            "site_name": "IBR: NA PINEHURST MEDICAL",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "78079B86996A0BF791EDB04820B9D3D8",
+            "siteid": "0",
+            "site_name": "IBR: NA ZURN",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "660766C6917981BF1496F8927E54E598",
+            "siteid": "0",
+            "site_name": "INB_DUKE_PITTSBORO_EFEMTO",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "1C7EA910B9680BE8EBCD7A2935E8ECCF",
+            "siteid": "155022",
+            "site_name": "INB_MOR_NC_PINEHURSTRESORT_NODE_A - A",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 8,
+                        "done": 8,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "657019C38325988371A7FD43FB11E408",
+            "siteid": "155487",
+            "site_name": "MINTER SCHOOL",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "74F787262BB5128DEF56C9FB104BC46D",
+            "siteid": "155434",
+            "site_name": "MOORE HOSPITAL - Moore Regional Hospital - B",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "84FB8BF624E871EE0B5DEDE1BAAB003E",
+            "siteid": "155564",
+            "site_name": "NA ABERDEEN",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "78925A1024DE0AF685749DA0AEB08995",
+            "siteid": "155215",
+            "site_name": "NA ABERDEEN [ALLTEL]",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 15,
+                        "done": 13,
+                        "perc": 86.67
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "2F7EE02DDEB738DCF7F7767DE513AA85",
+            "siteid": "155791",
+            "site_name": "NA CAMERON PCS",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "3A4F0490826DE0E3DF055A8A7B4ABD5A",
+            "siteid": "155790",
+            "site_name": "NA CARTHAGE PCS",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "ED6B5D5090D6DCD98274005E077717B1",
+            "siteid": "155828",
+            "site_name": "NA COLON ROAD",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "9020BA74C35A418CD11563760E2D197D",
+            "siteid": "155829",
+            "site_name": "NA CUMNOCK PCS",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "45939EECE621A480F54D7F2C17E47051",
+            "siteid": "155789",
+            "site_name": "NA DEEP RIVER PCS",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "20431E53C8D2A5D50562C6C26653A83B",
+            "siteid": "155997",
+            "site_name": "NA DOWNTOWN SANFORD PCS",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "A6900E8FA8C14D30F0490640480F5F1D",
+            "siteid": "155182",
+            "site_name": "NA HARVEY",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 0,
+                        "perc": 0
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "982D835110EA5F9114E2EFCA3F4F4E53",
+            "siteid": "155226",
+            "site_name": "NA HWY 211 [ALLTEL]",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 13,
+                        "done": 13,
+                        "perc": 100
+                    }
+                }
+            ]
+        },
+        {
+            "site_unid": "C9A2B2BF25A3B16E318769D6CF8BFF43",
+            "siteid": "9999999",
+            "site_name": "NA JONESBORO [ALLTEL REV] [TOWER ONLY]",
+            "switch": "RaleighA",
+            "tasks": [
+                {
+                    "duein": "eoy",
+                    "pm": {
+                        "total": 0,
+                        "done": 0,
+                        "perc": 100
+                    }
+                }
+            ]
+        }
+    ]
+}
