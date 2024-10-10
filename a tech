@@ -1,0 +1,107 @@
+import { Controller, Param, Get, Query, Req, Res } from '@nestjs/common';
+import { PmTechSummService } from './pmTechSumm.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmTechSummController {
+    constructor(private readonly pmTechSummService: PmTechSummService) {}
+
+    // Get PM Summary for Manager details
+    @Get('/tech/:techId/pm/summary')
+    async getTasksByPm(
+        @Param('techId') techId: string,
+        @Query('duein') duein: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        try {
+            const pmData = await this.pmTechSummService.PmData(techId, duein);
+            if (pmData.taskcounts.length === 0) {
+                return res.status(204).send(); // No Content
+            }
+            return res.json(pmData);
+        } catch (err) {
+            logger.error(`Error fetching PM Summary for techId: ${techId}`, err);
+            return res.status(500).json({ message: 'Internal server error', error: err.message });
+        }
+    }
+}
+==============
+import { Injectable } from '@nestjs/common';
+import PmTechRepo from './pmTechSumm.repo';
+
+@Injectable()
+export class PmTechSummService {
+    constructor(private readonly pmTechRepo: PmTechRepo) {}
+
+    async PmData(siteUnid: string, duein: string) {
+        try {
+            const data = await this.pmTechRepo.getPmTechSumm(siteUnid, duein);
+
+            // Transform the data to the desired response format
+            const taskCounts = data.map(item => ({
+                site_unid: item.site_unid,
+                siteid: item.siteid,
+                site_name: item.site_name,
+                switch: item.switch,
+                tasks: [
+                    {
+                        duein: duein,
+                        pm: {
+                            total: item.total,
+                            done: item.done,
+                            perc: item.perc,
+                        },
+                    },
+                ],
+            }));
+
+            return { taskcounts: taskCounts };
+        } catch (error) {
+            throw new Error(`Failed to fetch PM Data for siteUnid: ${siteUnid} due to ${error.message}`);
+        }
+    }
+}
+======
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmTechSumm.qfactory';
+
+@Injectable()
+export default class PmTechRepo {
+    constructor(private readonly oraUtil: Oracle) {}
+
+    async getPmTechSumm(siteUnid: string, duein: string) {
+        try {
+            if (!siteUnid || !duein) {
+                throw new Error('Invalid input parameters: siteUnid and duein are required.');
+            }
+
+            const query = queries.getPmTechSumm;
+            const qParams = [siteUnid, duein];
+
+            const data: any = await this.oraUtil.executeQuery(query, qParams);
+            return data.rows || [];
+        } catch (error) {
+            throw new Error(`Failed to execute getPmTechSumm: ${error.message}`);
+        }
+    }
+}
+==========
+export const queries = {
+    getPmTechSumm: `
+        SELECT 
+            techid,
+            total,
+            done,
+            perc
+        FROM 
+            pmd_widget_pm_details 
+        WHERE 
+            site_unid = :siteUnid 
+            AND due_date = :duein
+    `
+};
