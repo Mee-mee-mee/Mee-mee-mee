@@ -1,0 +1,108 @@
+import { Controller, Param, Get, Query, Req, Res } from '@nestjs/common';
+import { PmMgrSummService } from './pmMgrSumm.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmMgrSummController {
+    constructor(private readonly pmMgrSummService: PmMgrSummService) { }
+
+    // Get PM Summary for Manager details
+    @Get('/mgr/:mgrId/pm/summary')
+    async getTasksByPm(
+        @Param('mgrId') mgrId: string,
+        @Query('duein') duein: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        try {
+            const pmData = await this.pmMgrSummService.PmData(mgrId, duein);
+            if (pmData.taskcounts.length === 0) {
+                return res.status(204).send();
+            }
+            return res.json(pmData);
+        } catch (err) {
+            logger.error('Not able to get Summary of Manager for PM', err);
+            return res.status(500).json({ message: 'Internal server error', error: err });
+        }
+    }
+}
+===============
+import { Injectable } from '@nestjs/common';
+import PmMgrRepo from './pmMgrSumm.repo';
+
+@Injectable()
+export class PmMgrSummService {
+    constructor(private readonly pmMgrRepo: PmMgrRepo) { }
+
+    async PmData(mgrid: string, duein: string) {
+        try {
+            const data = await this.pmMgrRepo.getPmMgrSumm(mgrid, duein);
+            const transformedData = data.map((site: any) => {
+                const totalTasks = site.numtasks || 0;
+                const doneTasks = site.numtasksdone || 0;
+                const perc = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 100;
+                const tasks = [
+                    {
+                        duein: site.duein,
+                        pm: {
+                            total: totalTasks,
+                            done: doneTasks,
+                            perc: perc,
+                        },
+                    },
+                ];
+                return {
+                    techid: site.techid,
+                    tasks: tasks,
+                };
+            });
+            console.log('before transformed data', transformedData);
+            return { taskcounts: transformedData };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+
+================
+
+
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmMgrSumm.qfactory';
+
+@Injectable()
+export default class PmMgrRepo {
+    constructor(private oraUtil: Oracle) { }
+
+    async getPmMgrSumm(mgrid: string, duein: string) {
+        try {
+            const query = queries.getPmMgrSumm;
+            console.log('Due value', duein);
+            const qParams = {
+                mgrid: mgrid,
+                duein: duein,
+            };
+
+            let data: any = await this.oraUtil.executeQuery(query, qParams);
+
+            data = data.rows;
+            data = data.map((item) => {
+                const lowerCaseItem = {};
+                Object.keys(item).forEach((key) => {
+                    lowerCaseItem[key.toLowerCase()] = item[key];
+                });
+                return lowerCaseItem;
+            });
+
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
