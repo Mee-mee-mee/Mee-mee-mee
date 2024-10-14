@@ -308,3 +308,11 @@ describe('PmMgrRepo', () => {
     });
 });
 
+-----------------------
+providers: [
+    PmMgrSummService,  // Ensure the service is provided correctly
+    {
+        provide: PmMgrRepo,  // Corrected from PmMgrSummRepo to PmMgrRepo
+        useValue: mockRepo,
+    },
+],
