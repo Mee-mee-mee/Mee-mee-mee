@@ -105,4 +105,206 @@ export default class PmMgrRepo {
         }
     }
 }
+##########################
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummController } from './pmMgrSumm.controller';
+import { PmMgrSummService } from './pmMgrSumm.service';
+import { Request, Response } from 'express';
+
+describe('PmMgrSummController', () => {
+    let controller: PmMgrSummController;
+    let service: PmMgrSummService;
+
+    const mockService = {
+        PmData: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            controllers: [PmMgrSummController],
+            providers: [{ provide: PmMgrSummService, useValue: mockService }],
+        }).compile();
+
+        controller = module.get<PmMgrSummController>(PmMgrSummController);
+        service = module.get<PmMgrSummService>(PmMgrSummService);
+    });
+
+    it('should be defined', () => {
+        expect(controller).toBeDefined();
+    });
+
+    describe('getTasksByPm', () => {
+        it('should return task data', async () => {
+            const req = {} as Request;
+            const res = { json: jest.fn(), status: jest.fn().mockReturnThis() } as unknown as Response;
+            const mgrId = '123';
+            const duein = 'someDueIn';
+            const pmData = { taskcounts: [{ techid: 'tech1', tasks: [] }] };
+
+            mockService.PmData.mockResolvedValue(pmData);
+
+            await controller.getTasksByPm(mgrId, duein, req, res);
+
+            expect(res.json).toHaveBeenCalledWith(pmData);
+            expect(res.status).not.toHaveBeenCalledWith(204);
+        });
+
+        it('should return 204 if no task counts', async () => {
+            const req = {} as Request;
+            const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as unknown as Response;
+            const mgrId = '123';
+            const duein = 'someDueIn';
+            const pmData = { taskcounts: [] };
+
+            mockService.PmData.mockResolvedValue(pmData);
+
+            await controller.getTasksByPm(mgrId, duein, req, res);
+
+            expect(res.status).toHaveBeenCalledWith(204);
+            expect(res.send).toHaveBeenCalled();
+        });
+
+        it('should return 500 on error', async () => {
+            const req = {} as Request;
+            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
+            const mgrId = '123';
+            const duein = 'someDueIn';
+
+            mockService.PmData.mockRejectedValue(new Error('Some error'));
+
+            await controller.getTasksByPm(mgrId, duein, req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error', error: expect.any(Error) });
+        });
+    });
+});
+============
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmMgrSummService } from './pmMgrSumm.service';
+import PmMgrRepo from './pmMgrSumm.repo';
+
+describe('PmMgrSummService', () => {
+    let service: PmMgrSummService;
+    let repo: PmMgrRepo;
+
+    const mockRepo = {
+        getPmMgrSumm: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [{ provide: PmMgrSummRepo, useValue: mockRepo }],
+        }).compile();
+
+        service = module.get<PmMgrSummService>(PmMgrSummService);
+        repo = module.get<PmMgrRepo>(PmMgrRepo);
+    });
+
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
+
+    describe('PmData', () => {
+        it('should return transformed data', async () => {
+            const mgrid = '123';
+            const duein = 'someDueIn';
+            const mockData = [
+                { techid: 'tech1', numtasks: 10, numtasksdone: 5, duein: '2024-10-10' },
+            ];
+
+            mockRepo.getPmMgrSumm.mockResolvedValue(mockData);
+
+            const result = await service.PmData(mgrid, duein);
+
+            expect(result).toEqual({
+                taskcounts: [{
+                    techid: 'tech1',
+                    tasks: [{
+                        duein: '2024-10-10',
+                        pm: {
+                            total: 10,
+                            done: 5,
+                            perc: 50,
+                        },
+                    }],
+                }],
+            });
+        });
+
+        it('should handle empty data', async () => {
+            const mgrid = '123';
+            const duein = 'someDueIn';
+
+            mockRepo.getPmMgrSumm.mockResolvedValue([]);
+
+            const result = await service.PmData(mgrid, duein);
+
+            expect(result).toEqual({ taskcounts: [] });
+        });
+
+        it('should throw error if repo fails', async () => {
+            const mgrid = '123';
+            const duein = 'someDueIn';
+
+            mockRepo.getPmMgrSumm.mockRejectedValue(new Error('Some error'));
+
+            await expect(service.PmData(mgrid, duein)).rejects.toThrow('Some error');
+        });
+    });
+});
+=============
+import { Test, TestingModule } from '@nestjs/testing';
+import PmMgrRepo from './pmMgrSumm.repo';
+import { Oracle } from '../common/database/oracle';
+
+describe('PmMgrRepo', () => {
+    let repo: PmMgrRepo;
+    let oraUtil: Oracle;
+
+    const mockOracle = {
+        executeQuery: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [{ provide: Oracle, useValue: mockOracle }, PmMgrRepo],
+        }).compile();
+
+        repo = module.get<PmMgrRepo>(PmMgrRepo);
+        oraUtil = module.get<Oracle>(Oracle);
+    });
+
+    it('should be defined', () => {
+        expect(repo).toBeDefined();
+    });
+
+    describe('getPmMgrSumm', () => {
+        it('should return formatted data', async () => {
+            const mgrid = '123';
+            const duein = 'someDueIn';
+            const mockData = {
+                rows: [
+                    { TECHID: 'tech1', NUMTASKS: 10, NUMTASKSDONE: 5 },
+                ],
+            };
+
+            mockOracle.executeQuery.mockResolvedValue(mockData);
+
+            const result = await repo.getPmMgrSumm(mgrid, duein);
+
+            expect(result).toEqual([{ techid: 'tech1', numtasks: 10, numtasksdone: 5 }]);
+        });
+
+        it('should throw error if query fails', async () => {
+            const mgrid = '123';
+            const duein = 'someDueIn';
+
+            mockOracle.executeQuery.mockRejectedValue(new Error('Some error'));
+
+            await expect(repo.getPmMgrSumm(mgrid, duein)).rejects.toThrow('Some error');
+        });
+    });
+});
 
