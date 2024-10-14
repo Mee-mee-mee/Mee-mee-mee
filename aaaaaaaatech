@@ -107,3 +107,222 @@ export default class PmTechRepo {
     }
 }
 
+@@@@@@@@
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmTechSummController } from './pmTechSumm.controller';
+import { PmTechSummService } from './pmTechSumm.service';
+import { Request, Response } from 'express';
+
+describe('PmTechSummController', () => {
+    let controller: PmTechSummController;
+    let service: PmTechSummService;
+
+    const mockService = {
+        PmData: jest.fn(),
+    };
+
+    const mockRequest = {} as Request;
+    const mockResponse = {
+        json: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+    } as unknown as Response;
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            controllers: [PmTechSummController],
+            providers: [
+                {
+                    provide: PmTechSummService,
+                    useValue: mockService,
+                },
+            ],
+        }).compile();
+
+        controller = module.get<PmTechSummController>(PmTechSummController);
+        service = module.get<PmTechSummService>(PmTechSummService);
+    });
+
+    it('should be defined', () => {
+        expect(controller).toBeDefined();
+    });
+
+    it('should return PM data', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+        const pmData = { taskcounts: [{ siteid: 'site1', tasks: [] }] };
+
+        mockService.PmData.mockResolvedValue(pmData);
+
+        await controller.getTasksByPm(techId, duein, mockRequest, mockResponse);
+
+        expect(mockResponse.json).toHaveBeenCalledWith(pmData);
+    });
+
+    it('should return 204 if no tasks are found', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+        const pmData = { taskcounts: [] };
+
+        mockService.PmData.mockResolvedValue(pmData);
+
+        await controller.getTasksByPm(techId, duein, mockRequest, mockResponse);
+
+        expect(mockResponse.status).toHaveBeenCalledWith(204);
+        expect(mockResponse.send).toHaveBeenCalled();
+    });
+
+    it('should handle errors', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+
+        mockService.PmData.mockRejectedValue(new Error('Some error'));
+
+        await controller.getTasksByPm(techId, duein, mockRequest, mockResponse);
+
+        expect(mockResponse.status).toHaveBeenCalledWith(500);
+        expect(mockResponse.json).toHaveBeenCalledWith({
+            message: 'Internal server error',
+            error: 'Some error',
+        });
+    });
+});
+
+========
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmTechSummService } from './pmTechSumm.service';
+import PmTechRepo from './pmTechSumm.repo';
+
+describe('PmTechSummService', () => {
+    let service: PmTechSummService;
+    let repo: PmTechRepo;
+
+    const mockRepo = {
+        getPmTechSumm: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                PmTechSummService,
+                {
+                    provide: PmTechRepo,
+                    useValue: mockRepo,
+                },
+            ],
+        }).compile();
+
+        service = module.get<PmTechSummService>(PmTechSummService);
+        repo = module.get<PmTechRepo>(PmTechRepo);
+    });
+
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
+
+    it('should return transformed PM data', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+        const pmData = [{
+            siteid: 'site1',
+            site_unid: 'random_unid_123',  // Random value for site_unid
+            site_name: 'Random Site Name',   // Random value for site_name
+            numtasks: 10,
+            numtasksdone: 5,
+            duein: '2024-10-15',
+            switch: 'on',                     // Preset value for switch
+        }];
+
+        mockRepo.getPmTechSumm.mockResolvedValue(pmData);
+
+        const result = await service.PmData(techId, duein);
+
+        expect(result).toEqual({
+            taskcounts: [
+                {
+                    siteid: 'site1',
+                    site_unid: 'random_unid_123',  // Random value for site_unid
+                    site_name: 'Random Site Name',   // Random value for site_name
+                    switch: 'on',                     // Preset value for switch
+                    tasks: [
+                        {
+                            duein: '2024-10-15',
+                            pm: {
+                                total: 10,
+                                done: 5,
+                                perc: 50,
+                            },
+                        },
+                    ],
+                },
+            ],
+        });
+    });
+
+    it('should handle errors', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+
+        mockRepo.getPmTechSumm.mockRejectedValue(new Error('Some error'));
+
+        await expect(service.PmData(techId, duein)).rejects.toThrow('Some error');
+    });
+});
+
+============
+import { Test, TestingModule } from '@nestjs/testing';
+import PmTechRepo from './pmTechSumm.repo';
+import { Oracle } from '../common/database/oracle';
+
+describe('PmTechRepo', () => {
+    let repo: PmTechRepo;
+    let oraUtil: Oracle;
+
+    const mockOraUtil = {
+        executeQuery: jest.fn(),
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                PmTechRepo,
+                {
+                    provide: Oracle,
+                    useValue: mockOraUtil,
+                },
+            ],
+        }).compile();
+
+        repo = module.get<PmTechRepo>(PmTechRepo);
+        oraUtil = module.get<Oracle>(Oracle);
+    });
+
+    it('should be defined', () => {
+        expect(repo).toBeDefined();
+    });
+
+    it('should return PM data with lowercase keys', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+        const mockData = {
+            rows: [
+                { SITEID: 'site1', NUMTASKS: 10, NUMTASKSDONE: 5, DUEIN: '2024-10-15' },
+            ],
+        };
+
+        mockOraUtil.executeQuery.mockResolvedValue(mockData);
+
+        const result = await repo.getPmTechSumm(techId, duein);
+
+        expect(result).toEqual([{ siteid: 'site1', numtasks: 10, numtasksdone: 5, duein: '2024-10-15' }]);
+    });
+
+    it('should handle errors', async () => {
+        const techId = '1';
+        const duein = '2024-10-15';
+
+        mockOraUtil.executeQuery.mockRejectedValue(new Error('Some error'));
+
+        await expect(repo.getPmTechSumm(techId, duein)).rejects.toThrow('Some error');
+    });
+});
