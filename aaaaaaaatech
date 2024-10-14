@@ -1,0 +1,109 @@
+import { Controller, Param, Get, Query, Req, Res } from '@nestjs/common';
+import { PmTechSummService } from './pmTechSumm.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmTechSummController {
+    constructor(private readonly pmTechSummService: PmTechSummService) { }
+
+    // Get PM Summary for Tech details
+    @Get('/tech/:techId/pm/summary')
+    async getTasksByPm(
+        @Param('techId') techId: string,
+        @Query('duein') duein: string,
+        @Req() req: Request,
+        @Res() res: Response,
+    ) {
+        try {
+            const pmData = await this.pmTechSummService.PmData(techId, duein);
+            if (pmData.taskcounts.length === 0) {
+                return res.status(204).send(); // if tasks are 0
+            }
+            return res.json(pmData);
+        } catch (err) {
+            logger.error(`Error fetching PM Summary for techId: ${techId}`, err);
+            return res.status(500).json({ message: 'Internal server error', error: err.message });
+        }
+    }
+}
+================
+import { Injectable } from '@nestjs/common';
+import PmTechRepo from './pmTechSumm.repo';
+
+@Injectable()
+export class PmTechSummService {
+    constructor(private readonly pmTechRepo: PmTechRepo) { }
+
+    async PmData(techid: string, duein: string) {
+        try {
+            const data = await this.pmTechRepo.getPmTechSumm(techid, duein);
+            const transformedData = data.map((site: any) => {
+                const totalTasks = site.numtasks || 0;
+                const doneTasks = site.numtasksdone || 0;
+                const perc = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 100;
+                const tasks = [
+                    {
+                        duein: site.duein,
+                        pm: {
+                            total: totalTasks,
+                            done: doneTasks,
+                            perc: perc,
+                        },
+                    },
+                ];
+                return {
+                    siteid: site.siteid,
+                    site_unid: site.site_unid,
+                    site_name: site.site_name,
+                    switch: site.switch,
+                    tasks: tasks,
+                };
+            });
+            console.log('before transformed data', transformedData);
+            return { taskcounts: transformedData };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+=======
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmTechSumm.qfactory';
+
+@Injectable()
+export default class PmTechRepo {
+    constructor(private oraUtil: Oracle) { }
+
+    async getPmTechSumm(techid: string, duein: string) {
+        try {
+            const query = queries.getSummary;
+            console.log('Due value', duein);
+            const qParams = {
+                techid: techid,
+                duein: duein,
+            };
+
+            let data: any = await this.oraUtil.executeQuery(query, qParams);
+            // console.log('data ', data);
+            // console.log('data format', data.rows);
+            data = data.rows;
+            data = data.map((item) => {
+                const lowerCaseItem = {};
+                Object.keys(item).forEach((key) => {
+                    lowerCaseItem[key.toLowerCase()] = item[key];
+                });
+                return lowerCaseItem;
+            });
+
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
