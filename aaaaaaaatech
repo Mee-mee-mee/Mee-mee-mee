@@ -326,3 +326,123 @@ describe('PmTechRepo', () => {
         await expect(repo.getPmTechSumm(techId, duein)).rejects.toThrow('Some error');
     });
 });
+----------------------------
+
+      Due value 2024-10-15
+
+      at PmTechRepo.getPmTechSumm (pmTechSumm/pmTechSumm.repo.ts:12:21)
+
+
+
+ PASS  src/pmTechSumm/pmTechSumm.controller.spec.ts
+
+  ● Console
+
+    console.log
+      {"level":"error","message":"Error fetching PM Summary for techId: 1 Some error","stack":"Error: Some error\n    at Object.<anonymous> (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\src\\pmTechSumm\\pmTechSumm.controller.spec.ts:69:46)\n    at Promise.then.completed (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at _runTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\testWorker.js:106:12)","timestamp":"10-14-2024 18:19:56"}
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:79:23)
+
+
+
+ PASS  src/pmMgrSumm/pmMgrSumm.repo.spec.ts
+
+  ● Console
+
+    console.log
+      Due value someDueIn
+
+      at PmMgrRepo.getPmMgrSumm (pmMgrSumm/pmMgrSumm.repo.ts:14:21)
+
+    console.log
+      Due value someDueIn
+
+      at PmMgrRepo.getPmMgrSumm (pmMgrSumm/pmMgrSumm.repo.ts:14:21)
+
+
+ PASS  src/pmMgrSumm/pmMgrSumm.controller.spec.ts
+  ● Console
+
+    console.log
+      {"level":"error","message":"Not able to get Summary of Manager for PM Some error","stack":"Error: Some error\n    at Object.<anonymous> (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\src\\pmMgrSumm\\pmMgrSumm.controller.spec.ts:65:50)\n    at Promise.then.completed (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at _runTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\runTest.js:444:34)\n    at Object.worker (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\testWorker.js:106:12)","timestamp":"10-14-2024 18:19:57"}
+
+      at Console.log (../node_modules/winston/lib/winston/transports/console.js:79:23)
+
+
+Test Suites: 1 failed, 5 passed, 6 total
+Tests:       4 failed, 17 passed, 21 total
+Snapshots:   0 total
+Time:        7.358 s
+Ran all test suites related to changed files.
+
+Watch Usage
+ FAIL  src/pmMgrSumm/pmMgrSumm.service.spec.ts
+  PmMgrSummService
+    × should be defined (21 ms)                                                                                                      
+    PmData                                                                                                                           
+      × should return transformed data (3 ms)                                                                                        
+      × should handle empty data (2 ms)                                                                                              
+      × should throw error if repo fails (1 ms)                                                                                      
+                                                                                                                                     
+  ● PmMgrSummService › should be defined                                                                                             
+                                                                                                                                     
+    Nest could not find PmMgrSummService element (this provider does not exist in the current context)                               
+                                                                                                                                     
+      16 |         }).compile();                                                                                                     
+      17 |                                                                                                                           
+    > 18 |         service = module.get<PmMgrSummService>(PmMgrSummService);                                                         
+         |                          ^
+      19 |         repo = module.get<PmMgrRepo>(PmMgrRepo);
+      20 |     });
+      21 |
+
+      at InstanceLinksHost.get (../node_modules/@nestjs/core/injector/instance-links-host.js:15:19)
+      at TestingModule.find (../node_modules/@nestjs/core/injector/abstract-instance-resolver.js:8:60)
+      at TestingModule.get (../node_modules/@nestjs/core/nest-application-context.js:70:20)
+      at Object.<anonymous> (pmMgrSumm/pmMgrSumm.service.spec.ts:18:26)
+
+  ● PmMgrSummService › PmData › should return transformed data
+
+    Nest could not find PmMgrSummService element (this provider does not exist in the current context)
+
+      16 |         }).compile();
+      17 |
+    > 18 |         service = module.get<PmMgrSummService>(PmMgrSummService);
+         |                          ^
+      19 |         repo = module.get<PmMgrRepo>(PmMgrRepo);
+      20 |     });
+      21 |
+
+      at InstanceLinksHost.get (../node_modules/@nestjs/core/injector/instance-links-host.js:15:19)
+      at TestingModule.find (../node_modules/@nestjs/core/injector/abstract-instance-resolver.js:8:60)
+      at TestingModule.get (../node_modules/@nestjs/core/nest-application-context.js:70:20)
+      at Object.<anonymous> (pmMgrSumm/pmMgrSumm.service.spec.ts:18:26)
+
+  ● PmMgrSummService › PmData › should handle empty data
+
+    Nest could not find PmMgrSummService element (this provider does not exist in the current context)
+
+      16 |         }).compile();
+      17 |
+    > 18 |         service = module.get<PmMgrSummService>(PmMgrSummService);
+         |                          ^
+      19 |         repo = module.get<PmMgrRepo>(PmMgrRepo);
+      20 |     });
+      21 |
+
+      at InstanceLinksHost.get (../node_modules/@nestjs/core/injector/instance-links-host.js:15:19)
+      at TestingModule.find (../node_modules/@nestjs/core/injector/abstract-instance-resolver.js:8:60)
+      at TestingModule.get (../node_modules/@nestjs/core/nest-application-context.js:70:20)
+      at Object.<anonymous> (pmMgrSumm/pmMgrSumm.service.spec.ts:18:26)
+
+  ● PmMgrSummService › PmData › should throw error if repo fails
+
+    Nest could not find PmMgrSummService element (this provider does not exist in the current context)
+
+      16 |         }).compile();
+      17 |
+    > 18 |         service = module.get<PmMgrSummService>(PmMgrSummService);
+         |                          ^
+      19 |         repo = module.get<PmMgrRepo>(PmMgrRepo);
+      20 |     });
+      21 |
