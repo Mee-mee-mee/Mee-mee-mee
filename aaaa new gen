@@ -1,0 +1,100 @@
+export const queries = {
+    updategenreading: `
+      UPDATE OPSPM.PM_GENERATOR
+      SET 
+        TOTAL_RUNTIME = :totalruntime,
+        AC_VOLTAGE = :ac_voltage,
+        AC_CURRENT = :ac_current,
+        FUEL_LEVEL_1 = :fuel_level1,
+        FUEL_LEVEL_2 = :fuel_level2,
+        FUEL_LEVEL_3 = :fuel_level3,
+        FUEL_LEVEL_4 = :fuel_level4,
+        OIL_LEVEL = :oil_level,
+        META_LAST_UPDATED_BY = :loginid,
+        META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+       
+      WHERE SOURCE_TAG = :pm_unid`
+};
+
+=======import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './updategenreading.qFactory';
+
+@Injectable()
+export class UpdateGenReadingRepo {
+  constructor(private oraUtil: Oracle) { }
+
+  async updategenreading(reqBody: any): Promise<any> {
+    try {
+      const { pm_unid, userid: loginid, readings } = reqBody;
+      let result = [];
+
+      // Loop through all readings and update them one by one (no longer including 'fuel_gallonsadded1')
+      for (let reading of readings) {
+        const {
+          totalruntime, ac_voltage, ac_current,
+          fuel_level1, fuel_level2, fuel_level3, fuel_level4,
+          oil_level,
+        } = reading;
+
+        const qParams = [
+          pm_unid, loginid, totalruntime, ac_voltage, ac_current,
+          fuel_level1, fuel_level2, fuel_level3, fuel_level4,
+          oil_level
+        ];
+
+        // Execute the update query
+        await this.oraUtil.executeQuery(queries.updategenreading, qParams);
+
+        // After the update, fetch the latest metadata and readings from the database
+        const fetchQuery = `SELECT 
+            META_CREATED_BY, META_CREATED_DATE, META_LAST_UPDATED_BY, META_LAST_UPDATED_DATE 
+          FROM OPSPM.PM_GENERATOR 
+          WHERE SOURCE_TAG = :pm_unid`;
+
+        const fetchParams = [pm_unid];
+        const data: any = await this.oraUtil.executeQuery(fetchQuery, fetchParams);
+
+        if (data && data.rows && data.rows.length > 0) {
+          const metaData = data.rows[0];
+          result.push({
+            ...reading,
+            meta_createdby: metaData.META_CREATED_BY,
+            meta_createddate: metaData.META_CREATED_DATE,
+            meta_lastupdateby: metaData.META_LAST_UPDATED_BY,
+            meta_lastupdatedate: metaData.META_LAST_UPDATED_DATE
+          });
+        }
+      }
+
+      // Return the updated readings with the metadata
+      return result;
+    } catch (error) {
+      throw new Error('Database query failed: ' + error.message);
+    }
+  }
+}
+=========
+import { Injectable } from '@nestjs/common';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+
+@Injectable()
+export class UpdateGenreadingService {
+  constructor(private updateGenReadingRepo: UpdateGenReadingRepo) { }
+
+  // Main function to update readings
+  async updateDetails(reqBody: any) {
+    try {
+      // Perform the database update operation
+      await this.updateGenReadingRepo.updategenreading(reqBody);
+
+      // Return the structured response without affectedRows
+      return {
+        message: 'Readings added/updated successfully',
+        data: reqBody, // Sending back the data that was processed
+      };
+    } catch (error) {
+      throw new Error('Failed to update readings: ' + error.message);
+    }
+  }
+}
