@@ -1,0 +1,152 @@
+import { Controller, Param, Put, Req, Res } from '@nestjs/common';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+
+
+
+const config = require('config');
+@Controller('ioppm')
+@ApiTags('Default')
+
+export class UpdateGenReadingController {
+    constructor(private readonly UpdateGenreadingService: UpdateGenreadingService) {}
+
+     // PM put Genreading
+  @Put('/update/pm/genreading')
+  async putGenReading(@Req() req: Request, @Res() res: Response) {
+    try {
+        // const upgenData = config.upgenData;
+        // console.log(upgenData)
+        const data: any = await this.UpdateGenreadingService.updateDetails(req);
+      return res.send(data);
+    } catch (err) {
+      logger.error('Error in updating genreading', err);
+      return res.status(500).json(err);
+    }
+  }
+}
+============================
+import { Injectable } from '@nestjs/common';
+import UpdateGenReadingRepo from './updategenreading.repo';
+
+
+@Injectable()
+export class UpdateGenreadingService {
+
+  constructor(private UpdateGenReadingRepo: UpdateGenReadingRepo) {}
+  async updateDetails(req) {
+      try {
+        const data = await this.UpdateGenReadingRepo.updategenreading(req);
+        const data_json= {"message": "Readings added/updated successfully","data": req.body}
+        return data_json;
+      } catch (error) {
+        throw error;
+      }
+}
+    }
+===============================
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './updategenreading.qFactory';
+
+@Injectable()
+export default class UpdateGenReadingRepo {
+  constructor(private oraUtil: Oracle) { }
+
+  async updategenreading(req: any) {
+    try {
+
+      const query = queries.updategenreading;
+      const pm_unid = req.body.pm_unid;
+      const loginid = req.body.userid;
+      const genReadings = req.body.readings;
+
+      var result;
+      for (let readings of genReadings) {
+        const totalruntime = readings['totalruntime'];
+        const ac_voltage = readings['ac_voltage'];
+        const ac_current = readings['ac_current'];
+        const fuel_level_1 = readings['fuel_level_1'];
+        const fuel_level_2 = readings['fuel_level_2'];
+        const fuel_level_3 = readings['fuel_level_3'];
+        const fuel_level_4 = readings['fuel_level_4'];
+
+
+        const qParams = [pm_unid, loginid, totalruntime, ac_voltage, ac_current, fuel_level_1, fuel_level_2, fuel_level_3, fuel_level_4];
+        let data: any = await this.oraUtil.executeQuery(query, qParams);
+        result = data.rowsaffected;
+      }
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
+======================
+export const queries = {
+    updategenreading: `UPDATE OPSPM.PM_GENERATOR 
+    SET 
+    TOTAL_RUNTIME = :totalruntime,
+    AC_VOLTAGE = :ac_voltage,
+    AC_CURRENT = :ac_current
+    FUEL_LEVEL_1 = :fuel_level_1
+    FUEL_LEVEL_2 = :fuel_level_2
+    FUEL_LEVEL_3 = :fuel_level_3
+    FUEL_LEVEL_4 = :fuel_level_4
+    META_LAST_UPDATED_BY = :loginid
+    META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+
+    where SOURCE_TAG= :pm_unid`
+}
+=====================
+{
+    "pm_unid": "4F97CD39DE06DCAB696F151C3F92E508",
+    "userid": "rhymeri",
+    "readings": [
+        {
+            "reading_unid": "5FC2DF7C2FE80700588864F26D72A625",
+            "gen_meta_universalid": "8F3F6DB982565497C1C328DD77290B36",
+            "gen_emis_id": "35804714",
+            "ac_voltage": "24.10",
+            "ac_current": "72.00",
+            "oil_level": "0.25",
+            "fuel_level1": "0.87",
+            "fuel_level2": "0.00",
+            "fuel_level3": "0.00",
+            "fuel_level4": "0.00",
+            "totalruntime": "123",
+            "fuel_gallonsadded1": "1"
+        }
+    ]
+}
+=======================================
+{
+    "message": "Readings added/updated successfully",
+    "data": {
+        "pm_unid": "4F97CD39DE06DCAB696F151C3F92E508",
+        "userid": "rhymeri",
+        "readings": [
+            {
+                "reading_unid": "5FC2DF7C2FE80700588864F26D72A625",
+                "gen_meta_universalid": "8F3F6DB982565497C1C328DD77290B36",
+                "gen_emis_id": "35804714",
+                "ac_voltage": "24.10",
+                "ac_current": "72.00",
+                "oil_level": "0.25",
+                "fuel_level1": "0.87",
+                "fuel_level2": "0.00",
+                "fuel_level3": "0.00",
+                "fuel_level4": "0.00",
+                "totalruntime": "123",
+                "fuel_gallonsadded1": "1",
+                "meta_createddate": "2023-02-03 11:54:03",
+                "meta_createdby": "rhymeri",
+                "meta_lastupdatedate": "2024-11-07 02:40:45",
+                "meta_lastupdateby": "rhymeri"
+            }
+        ]
+    }
+}
