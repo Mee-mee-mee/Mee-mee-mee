@@ -1,3 +1,10 @@
+Error report -
+SQL Error: ORA-00904: "COLLJA": invalid identifier
+00904. 00000 -  "%s: invalid identifier"
+*Cause:    
+*Action:
+1 row updated.
+==========
 import { Controller, Put, Body, Res, Req } from '@nestjs/common';
 import { UpdateGenreadingService } from './updategenreading.service';
 import { ApiTags } from '@nestjs/swagger';
