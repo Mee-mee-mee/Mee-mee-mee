@@ -1,3 +1,16 @@
+UPDATE OPSPM.PM_GENERATOR 
+    SET 
+    TOTAL_RUNTIME = '123',
+    AC_VOLTAGE = '11',
+    AC_CURRENT = '11',
+    FUEL_LEVEL_1 = '10',
+    FUEL_LEVEL_2 = '0',
+    FUEL_LEVEL_3 = '0',
+    FUEL_LEVEL_4 = '0',
+    OIL_LEVEL= '12',
+    META_LAST_UPDATED_BY = 'collja',
+    META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp)
+    where SOURCE_TAG= '08087550FD254AD1E15C6D5114148BB0';
 Error report -
 SQL Error: ORA-00904: "COLLJA": invalid identifier
 00904. 00000 -  "%s: invalid identifier"
