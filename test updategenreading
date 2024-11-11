@@ -1,0 +1,247 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenReadingController } from './updategenreading.controller';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { Response } from 'express';
+import { BadRequestException } from '@nestjs/common';
+
+describe('UpdateGenReadingController', () => {
+  let controller: UpdateGenReadingController;
+  let service: UpdateGenreadingService;
+  let mockResponse: Partial<Response>;
+
+  beforeEach(async () => {
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UpdateGenReadingController],
+      providers: [
+        {
+          provide: UpdateGenreadingService,
+          useValue: {
+            updateDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<UpdateGenReadingController>(UpdateGenReadingController);
+    service = module.get<UpdateGenreadingService>(UpdateGenreadingService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should call updateDetails and return 200 on success', async () => {
+    const result = {
+      pm_unid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: [],
+    };
+    const reqBody = {
+      pm_unid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: [],
+    };
+
+    jest.spyOn(service, 'updateDetails').mockResolvedValue(result);
+
+    await controller.putGenReading({ body: reqBody }, mockResponse as Response);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
+    expect(mockResponse.json).toHaveBeenCalledWith({
+      message: 'Readings added/updated successfully',
+      data: result,
+    });
+  });
+
+  it('should return 500 if service throws an error', async () => {
+    const reqBody = { pm_unid: '4F97CD39DE06DCAB696F151C3F92E508', userid: 'collja', readings: [] };
+
+    jest.spyOn(service, 'updateDetails').mockRejectedValue(new Error('Service error'));
+
+    await controller.putGenReading({ body: reqBody }, mockResponse as Response);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.json).toHaveBeenCalledWith({
+      message: 'Error updating readings',
+      error: 'Service error',
+      statusCode: 500,
+    });
+  });
+});
+
+=============
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+
+describe('UpdateGenreadingService', () => {
+  let service: UpdateGenreadingService;
+  let repo: UpdateGenReadingRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdateGenreadingService,
+        {
+          provide: UpdateGenReadingRepo,
+          useValue: {
+            updategenreading: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UpdateGenreadingService>(UpdateGenreadingService);
+    repo = module.get<UpdateGenReadingRepo>(UpdateGenReadingRepo);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should return updated readings with metadata on success', async () => {
+    const reqBody = {
+      pm_unid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: [
+        {
+          ac_voltage: '24.10',
+          ac_current: '72.00',
+          oil_level: '0.25',
+          fuel_level1: '0.87',
+          fuel_level2: '0.00',
+          fuel_level3: '0.00',
+          fuel_level4: '0.00',
+          totalruntime: '123',
+        },
+      ],
+    };
+
+    const mockResult = [
+      {
+        ac_voltage: '24.10',
+        ac_current: '72.00',
+        oil_level: '0.25',
+        fuel_level1: '0.87',
+        fuel_level2: '0.00',
+        fuel_level3: '0.00',
+        fuel_level4: '0.00',
+        totalruntime: '123',
+        meta_createdby: 'rhymeri',
+        meta_createddate: '2023-02-03 11:54:03',
+        meta_lastupdateby: 'collja',
+        meta_lastupdatedate: '2024-11-10 23:42:47',
+      },
+    ];
+
+    jest.spyOn(repo, 'updategenreading').mockResolvedValue(mockResult);
+
+    const result = await service.updateDetails(reqBody);
+
+    expect(result).toEqual({
+      pmunid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: mockResult,
+    });
+  });
+
+  it('should throw an error if the repository fails', async () => {
+    const reqBody = { pm_unid: '4F97CD39DE06DCAB696F151C3F92E508', userid: 'collja', readings: [] };
+
+    jest.spyOn(repo, 'updategenreading').mockRejectedValue(new Error('Database error'));
+
+    await expect(service.updateDetails(reqBody)).rejects.toThrowError('Failed to update readings: Database error');
+  });
+});
+=======
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './updategenreading.qFactory';
+
+describe('UpdateGenReadingRepo', () => {
+  let repo: UpdateGenReadingRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdateGenReadingRepo,
+        {
+          provide: Oracle,
+          useValue: {
+            executeQuery: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    repo = module.get<UpdateGenReadingRepo>(UpdateGenReadingRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
+  });
+
+  it('should call executeQuery to update readings and fetch metadata', async () => {
+    const reqBody = {
+      pm_unid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: [
+        {
+          ac_voltage: '24.10',
+          ac_current: '72.00',
+          oil_level: '0.25',
+          fuel_level1: '0.87',
+          fuel_level2: '0.00',
+          fuel_level3: '0.00',
+          fuel_level4: '0.00',
+          totalruntime: '123',
+        },
+      ],
+    };
+
+    const mockFetchData = {
+      rows: [
+        {
+          META_CREATED_BY: 'rhymeri',
+          META_CREATED_DATE: '2023-02-03 11:54:03',
+          META_LAST_UPDATED_BY: 'collja',
+          META_LAST_UPDATED_DATE: '2024-11-10 23:42:47',
+        },
+      ],
+    };
+
+    jest.spyOn(oraUtil, 'executeQuery').mockResolvedValueOnce(mockFetchData);
+
+    const result = await repo.updategenreading(reqBody);
+
+    expect(oraUtil.executeQuery).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([
+      {
+        ac_voltage: '24.10',
+        ac_current: '72.00',
+        oil_level: '0.25',
+        fuel_level1: '0.87',
+        fuel_level2: '0.00',
+        fuel_level3: '0.00',
+        fuel_level4: '0.00',
+        totalruntime: '123',
+        meta_createdby: 'rhymeri',
+        meta_createddate: '2023-02-03 11:54:03',
+        meta_lastupdateby: 'collja',
+        meta_lastupdatedate: '2024-11-10 23:42:47',
+      },
+    ]);
+  });
+
+  it('should throw an error if query execution fails', async () => {
+    const reqBody = { pm_unid: '4F97CD39DE06DCAB696F151C3F92E508', userid: 'collja', readings: [] };
+
+    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Query execution failed
