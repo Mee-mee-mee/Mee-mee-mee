@@ -249,3 +249,56 @@ describe('UpdateGenReadingRepo', () => {
     await expect(repo.updategenreading(reqBody)).rejects.toThrowError('Database query failed: Query execution failed');
   });
 });
+++++++++++
+ FAIL  updateGenReading/updategenreading.repo.spec.ts (6.524 s)
+  ● UpdateGenReadingRepo › should call executeQuery to update readings and fetch metadata
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 16
+    + Received  +  1
+
+    - Array [
+    -   Object {
+    -     "ac_current": "72.00",
+    -     "ac_voltage": "24.10",
+    -     "fuel_level1": "0.87",
+    -     "fuel_level2": "0.00",
+    -     "fuel_level3": "0.00",
+    -     "fuel_level4": "0.00",
+    -     "meta_createdby": "rhymeri",
+    -     "meta_createddate": "2023-02-03 11:54:03",
+    -     "meta_lastupdateby": "collja",
+    -     "meta_lastupdatedate": "2024-11-10 23:42:47",
+    -     "oil_level": "0.25",
+    -     "totalruntime": "123",
+    -   },
+    - ]
+    + Array []
+
+      63 |
+      64 |     expect(oraUtil.executeQuery).toHaveBeenCalledTimes(2);
+    > 65 |     expect(result).toEqual([
+         |                    ^
+      66 |       {
+      67 |         ac_voltage: '24.10',
+      68 |         ac_current: '72.00',
+
+      at Object.<anonymous> (updateGenReading/updategenreading.repo.spec.ts:65:20)
+
+  ● UpdateGenReadingRepo › should throw an error if query execution fails
+
+    expect(received).rejects.toThrowError()
+
+    Received promise resolved instead of rejected
+    Resolved to value: []
+
+      86 |     jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Query execution failed'));
+      87 |
+    > 88 |     await expect(repo.updategenreading(reqBody)).rejects.toThrowError('Database query failed: Query execution failed');
+         |           ^
+      89 |   });
+      90 | });
+
+      at expect (../node_modules/expect/build/index.js:113:15)
+      at Object.<anonymous> (updateGenReading/updategenreading.repo.spec.ts:88:11)
