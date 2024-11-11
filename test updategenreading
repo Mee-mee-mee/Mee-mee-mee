@@ -115,6 +115,130 @@ describe('UpdateGenReadingRepo', () => {
     mockExecuteQuery.mockRejectedValue(new Error('Query execution failed'));
 
     // Expecting the method to throw an error when query fails
+    await expect(repo.updategenreading(reqBody)).rejects.toThrow('Database query failed: Query execution failed');
+  });
+});
+
+
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './updategenreading.qFactory';
+
+// Mocking the Oracle utility class
+jest.mock('../common/database/oracle');
+const mockExecuteQuery = jest.fn();
+
+describe('UpdateGenReadingRepo', () => {
+  let repo: UpdateGenReadingRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UpdateGenReadingRepo,
+        {
+          provide: Oracle,
+          useValue: {
+            executeQuery: mockExecuteQuery, // Mocking executeQuery method
+          },
+        },
+      ],
+    }).compile();
+
+    repo = module.get<UpdateGenReadingRepo>(UpdateGenReadingRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks(); // Clear mocks after each test
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
+  });
+
+  it('should call executeQuery to update readings and fetch metadata', async () => {
+    const reqBody = {
+      pm_unid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: [
+        {
+          ac_voltage: '24.10',
+          ac_current: '72.00',
+          oil_level: '0.25',
+          fuel_level1: '0.87',
+          fuel_level2: '0.00',
+          fuel_level3: '0.00',
+          fuel_level4: '0.00',
+          totalruntime: '123',
+        },
+      ],
+    };
+
+    const mockFetchData = {
+      rows: [
+        {
+          META_CREATED_BY: 'rhymeri',
+          META_CREATED_DATE: '2023-02-03 11:54:03',
+          META_LAST_UPDATED_BY: 'collja',
+          META_LAST_UPDATED_DATE: '2024-11-10 23:42:47',
+        },
+      ],
+    };
+
+    // Mocking the first executeQuery (for update) and the second one (for fetch)
+    mockExecuteQuery.mockResolvedValueOnce([]); // Mock the update query
+    mockExecuteQuery.mockResolvedValueOnce(mockFetchData); // Mock the fetch query
+
+    const result = await repo.updategenreading(reqBody);
+
+    // Expect the executeQuery to have been called twice
+    expect(mockExecuteQuery).toHaveBeenCalledTimes(2);
+
+    // Check the result for the updated readings and metadata
+    expect(result).toEqual([
+      {
+        ac_voltage: '24.10',
+        ac_current: '72.00',
+        oil_level: '0.25',
+        fuel_level1: '0.87',
+        fuel_level2: '0.00',
+        fuel_level3: '0.00',
+        fuel_level4: '0.00',
+        totalruntime: '123',
+        meta_createdby: 'rhymeri',
+        meta_createddate: '2023-02-03 11:54:03',
+        meta_lastupdateby: 'collja',
+        meta_lastupdatedate: '2024-11-10 23:42:47',
+      },
+    ]);
+  });
+
+  it('should throw an error if query execution fails', async () => {
+    const reqBody = {
+      pm_unid: '4F97CD39DE06DCAB696F151C3F92E508',
+      userid: 'collja',
+      readings: [
+        {
+          ac_voltage: '24.10',
+          ac_current: '72.00',
+          oil_level: '0.25',
+          fuel_level1: '0.87',
+          fuel_level2: '0.00',
+          fuel_level3: '0.00',
+          fuel_level4: '0.00',
+          totalruntime: '123',
+        },
+      ],
+    };
+
+    // Mocking the executeQuery to throw an error
+    mockExecuteQuery.mockRejectedValue(new Error('Query execution failed'));
+
+    // Expecting the method to throw an error when query fails
     await expect(repo.updategenreading(reqBody)).rejects.toThrowError('Database query failed: Query execution failed');
   });
 });
