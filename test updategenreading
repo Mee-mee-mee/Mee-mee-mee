@@ -244,4 +244,8 @@ describe('UpdateGenReadingRepo', () => {
   it('should throw an error if query execution fails', async () => {
     const reqBody = { pm_unid: '4F97CD39DE06DCAB696F151C3F92E508', userid: 'collja', readings: [] };
 
-    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Query execution failed
+    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Query execution failed'));
+
+    await expect(repo.updategenreading(reqBody)).rejects.toThrowError('Database query failed: Query execution failed');
+  });
+});
