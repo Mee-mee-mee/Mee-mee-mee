@@ -1,0 +1,158 @@
+import { Controller, Put, Req, Res } from '@nestjs/common';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
+
+@ApiTags('Generator Readings')
+@Controller('ioppm')
+export class UpdateGenReadingController {
+  constructor(private readonly updateGenreadingService: UpdateGenreadingService) {}
+
+  @Put('/update/pm/genreading')
+  async putGenReading(@Req() req: any, @Res() res: Response) {
+    try {
+      const reqBody = req.body;
+
+      // Call the service to update the readings and get the response
+      const result = await this.updateGenreadingService.updateDetails(reqBody);
+
+      // Return the result with the expected response format
+      return res.status(200).json({
+        message: 'Readings added/updated successfully',
+        data: result,
+      });
+    } catch (err) {
+      // Return the error in the expected response format
+      return res.status(500).json({
+        message: 'Error updating readings',
+        error: err.message || err,
+        statusCode: 500,
+      });
+    }
+  }
+}
+
+=======
+import { Injectable } from '@nestjs/common';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+
+@Injectable()
+export class UpdateGenreadingService {
+  constructor(private updateGenReadingRepo: UpdateGenReadingRepo) {}
+
+  async updateDetails(reqBody: any) {
+    try {
+      const { pm_unid, userid, readings } = reqBody;
+      let result = [];
+
+      // Iterate over each reading and perform the update
+      for (let reading of readings) {
+        // Perform the update and fetch metadata for the updated readings
+        const updatedReading = await this.updateGenReadingRepo.updategenreading({
+          ...reading,
+          pm_unid,
+          userid,
+        });
+
+        // Add the metadata to the result if available
+        if (updatedReading && updatedReading.metaData) {
+          result.push({
+            ...reading,
+            meta_createddate: updatedReading.metaData.META_CREATED_DATE,
+            meta_createdby: updatedReading.metaData.META_CREATED_BY,
+            meta_lastupdatedate: updatedReading.metaData.META_LAST_UPDATED_DATE,
+            meta_lastupdateby: updatedReading.metaData.META_LAST_UPDATED_BY,
+          });
+        }
+      }
+
+      // Return the result in the expected format
+      return {
+        pm_unid,
+        userid,
+        readings: result,
+      };
+    } catch (error) {
+      throw new Error('Failed to update readings: ' + error.message);
+    }
+  }
+}
+
+=========
+
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './updategenreading.qFactory';
+
+@Injectable()
+export class UpdateGenReadingRepo {
+  constructor(private oraUtil: Oracle) {}
+
+  async updategenreading(reqBody: any): Promise<any> {
+    try {
+      const { pm_unid, userid, readings } = reqBody;
+      let result = [];
+
+      // Loop through each reading to update it
+      for (let reading of readings) {
+        const {
+          ac_voltage, totalruntime, ac_current,
+          fuel_level1, fuel_level2, fuel_level3, fuel_level4,
+          oil_level,
+        } = reading;
+
+        // Prepare the query parameters
+        const qParams = [
+          Number(ac_voltage), Number(totalruntime), Number(ac_current),
+          Number(fuel_level1), Number(fuel_level2), Number(fuel_level3), Number(fuel_level4),
+          Number(oil_level), userid, pm_unid,
+        ];
+
+        const uQuery = queries.updategenreading;
+        await this.oraUtil.executeQuery(uQuery, qParams);
+
+        // Fetch metadata after the update
+        const fetchParams = [pm_unid];
+        const fQuery = queries.fetchQuery;
+        const data: any = await this.oraUtil.executeQuery(fQuery, fetchParams);
+
+        if (data && data.rows && data.rows.length > 0) {
+          const metaData = data.rows[0];
+          result.push({
+            ...reading,
+            metaData: metaData,
+          });
+        }
+      }
+
+      return result.length > 0 ? result[0] : null; // Return first updated reading with metadata
+    } catch (error) {
+      throw new Error('Database query failed: ' + error.message);
+    }
+  }
+}
+====
+
+export const queries = {
+  updategenreading: `
+    UPDATE OPSPM.PM_GENERATOR 
+    SET 
+      AC_VOLTAGE = :acvoltage,
+      TOTAL_RUNTIME = :total_runtime,
+      AC_CURRENT = :accurrent,
+      FUEL_LEVEL_1 = :fuellevel1,
+      FUEL_LEVEL_2 = :fuellevel2,
+      FUEL_LEVEL_3 = :fuellevel3,
+      FUEL_LEVEL_4 = :fuellevel4,
+      OIL_LEVEL = :oil_level,
+      META_LAST_UPDATED_BY = :userid,
+      META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp)
+    WHERE SOURCE_TAG = :pm_unid`,
+
+  fetchQuery: `
+    SELECT 
+      META_CREATED_BY, META_CREATED_DATE, 
+      META_LAST_UPDATED_BY, META_LAST_UPDATED_DATE
+    FROM OPSPM.PM_GENERATOR
+    WHERE SOURCE_TAG = :fetchParams`
+};
