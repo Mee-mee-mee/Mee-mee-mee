@@ -589,3 +589,21 @@ describe('UpdateGenReadingController', () => {
     });
   });
 });
+###############################
+ FAIL  updateGenReading/updategenreading.repo.spec.ts (6.707 s)
+  ● UpdateGenReadingRepo › should throw an error if query execution fails
+
+    expect(received).rejects.toThrowError()
+
+    Received promise resolved instead of rejected
+    Resolved to value: []
+
+      88 |     jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Query execution failed'));
+      89 |
+    > 90 |     await expect(repo.updategenreading(reqBody)).rejects.toThrowError('Database query failed: Query execution failed');   
+         |           ^
+      91 |   });
+      92 | });
+
+      at expect (../node_modules/expect/build/index.js:113:15)
+      at Object.<anonymous> (updateGenReading/updategenreading.repo.spec.ts:90:11)
