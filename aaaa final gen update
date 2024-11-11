@@ -156,3 +156,54 @@ export const queries = {
     FROM OPSPM.PM_GENERATOR
     WHERE SOURCE_TAG = :fetchParams`
 };
+++++++++++++++++++++
+import { Injectable } from '@nestjs/common';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+
+@Injectable()
+export class UpdateGenreadingService {
+  constructor(private updateGenReadingRepo: UpdateGenReadingRepo) {}
+
+  async updateDetails(reqBody: any) {
+    try {
+      const { pm_unid, userid, readings } = reqBody;
+
+      // Check if readings is an array and has at least one element
+      if (!Array.isArray(readings) || readings.length === 0) {
+        throw new Error('No readings provided or invalid readings format');
+      }
+
+      let result = [];
+
+      // Iterate over each reading and perform the update
+      for (let reading of readings) {
+        // Perform the update and fetch metadata for the updated readings
+        const updatedReading = await this.updateGenReadingRepo.updategenreading({
+          ...reading,
+          pm_unid,
+          userid,
+        });
+
+        // Add the metadata to the result if available
+        if (updatedReading && updatedReading.metaData) {
+          result.push({
+            ...reading,
+            meta_createddate: updatedReading.metaData.META_CREATED_DATE,
+            meta_createdby: updatedReading.metaData.META_CREATED_BY,
+            meta_lastupdatedate: updatedReading.metaData.META_LAST_UPDATED_DATE,
+            meta_lastupdateby: updatedReading.metaData.META_LAST_UPDATED_BY,
+          });
+        }
+      }
+
+      // Return the result in the expected format
+      return {
+        pm_unid,
+        userid,
+        readings: result,
+      };
+    } catch (error) {
+      throw new Error('Failed to update readings: ' + error.message);
+    }
+  }
+}
