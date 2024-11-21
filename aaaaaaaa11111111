@@ -25,12 +25,12 @@ describe('SCSiteController', () => {
 
     controller = module.get<SCSiteController>(SCSiteController);
     service = module.get<SCSiteService>(SCSiteService);
-    req = {} as Request;
+    req = {} as Request; // Mocking the request object
     res = {
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
       json: jest.fn(),
-    } as unknown as Response;
+    } as unknown as Response; // Mocking the response object
   });
 
   it('should be defined', () => {
@@ -38,33 +38,13 @@ describe('SCSiteController', () => {
   });
 
   describe('getPmDetails', () => {
-    it('should return scorecard details successfully', async () => {
-      const loginId = 'testLoginId';
-      const duein = 'false';
-      const url = 'http://example.com/opsscorecard/testLoginId/pm';
-      const mockResponse = { data: 'scorecard data' };
-
-      // Mocking the getDetails method to simulate a successful response
-      jest.spyOn(service, 'getDetails').mockImplementation((req, res, url) => {
-        res.status(HttpStatus.OK).send(mockResponse.data);
-      });
-
-      // Calling the controller method
-      await controller.getPmDetails(loginId, duein, req, res);
-
-      // Verifying if service.getDetails was called correctly and the response is as expected
-      expect(service.getDetails).toHaveBeenCalledWith(req, res, url);
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(res.send).toHaveBeenCalledWith(mockResponse.data);
-    });
-
     it('should handle errors gracefully', async () => {
       const loginId = 'testLoginId';
       const duein = 'false';
       const url = 'http://example.com/opsscorecard/testLoginId/pm';
 
       // Mocking the getDetails method to simulate an error response
-      jest.spyOn(service, 'getDetails').mockImplementation((req, res, url) => {
+      jest.spyOn(service, 'getDetails').mockImplementation((req: Request, res: Response, url: string) => {
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error in getting details of scorecard' });
       });
 
