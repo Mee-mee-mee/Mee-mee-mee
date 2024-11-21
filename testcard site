@@ -121,3 +121,72 @@ describe('SCSiteService', () => {
 });
 ============
   
+FAIL  src/scoreCardSwitch/scoreCardSwitch.service.spec.ts                                                                           
+  ● Test suite failed to run
+                                                                                                                                     
+    Your test suite must contain at least one test.                                                                                  
+                                                                                                                                     
+      at onResult (../node_modules/@jest/core/build/TestScheduler.js:133:18)                                                         
+      at ../node_modules/@jest/core/build/TestScheduler.js:254:19                                                                    
+      at ../node_modules/emittery/index.js:363:13                                                                                    
+          at Array.map (<anonymous>)                                                                                                 
+      at Emittery.emit (../node_modules/emittery/index.js:361:23)
+
+ PASS  src/genInfo/genInfo.sevice.spec.ts
+ FAIL  src/scoreCardSwitch/scoreCardSwitch.controller.spec.ts
+  ● Test suite failed to run
+                                                                                                                                     
+    Your test suite must contain at least one test.                                                                                  
+                                                                                                                                     
+      at onResult (../node_modules/@jest/core/build/TestScheduler.js:133:18)                                                         
+      at ../node_modules/@jest/core/build/TestScheduler.js:254:19                                                                    
+      at ../node_modules/emittery/index.js:363:13                                                                                    
+          at Array.map (<anonymous>)                                                                                                 
+      at Emittery.emit (../node_modules/emittery/index.js:361:23)
+
+ PASS  src/app.controller.spec.ts
+
+Summary of all failing tests
+ FAIL  scoreCardSite/scoreCardSite.controller.spec.ts
+  ● Test suite failed to run
+
+    src/scoreCardSite/scoreCardSite.controller.spec.ts:2:34 - error TS2307: Cannot find module './sc-site.controller' or its corresponding type declarations.
+
+    2 import { SCSiteController } from './sc-site.controller';
+                                       ~~~~~~~~~~~~~~~~~~~~~~
+    src/scoreCardSite/scoreCardSite.controller.spec.ts:5:10 - error TS2614: Module '"../common/logger/logger"' has no exported member 'Logger'. Did you mean to use 'import Logger from "../common/logger/logger"' instead?
+
+    5 import { Logger } from '../common/logger/logger';
+               ~~~~~~
+    src/scoreCardSite/scoreCardSite.controller.spec.ts:44:88 - error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'void | Promise<void>'.
+
+    44             const serviceSpy = jest.spyOn(service, 'getDetails').mockResolvedValueOnce(true);
+                                                                                              ~~~~
+
+ FAIL  scoreCardSite/scoreCardSite.service.spec.ts
+  ● Test suite failed to run
+
+    src/scoreCardSite/scoreCardSite.service.spec.ts:30:66 - error TS2345: Argument of type '{ data: string; }' is not assignable to parameter of type 'never'.
+
+    30             jest.spyOn(restClient, 'get1').mockResolvedValueOnce(mockData);
+                                                                        ~~~~~~~~
+    src/scoreCardSite/scoreCardSite.service.spec.ts:44:66 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    44             jest.spyOn(restClient, 'get1').mockRejectedValueOnce(new Error('Request failed'));
+                                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ FAIL  scoreCardSwitch/scoreCardSwitch.service.spec.ts
+  ● Test suite failed to run
+
+    Your test suite must contain at least one test.
+
+      at onResult (../node_modules/@jest/core/build/TestScheduler.js:133:18)
+      at ../node_modules/@jest/core/build/TestScheduler.js:254:19
+      at ../node_modules/emittery/index.js:363:13
+          at Array.map (<anonymous>)
+      at Emittery.emit (../node_modules/emittery/index.js:361:23)
+
+ FAIL  scoreCardSwitch/scoreCardSwitch.controller.spec.ts
+  ● Test suite failed to run
+
+    Your test suite must contain at least one test.
