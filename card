@@ -1,3 +1,19 @@
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios'
+import { OracleModule } from '../common/database/oracle.module';
+import { RestClientModule } from '../common/util/restClient/restClient.module';
+import { SCSiteController } from './scoreCardSite.controller';
+import { SCSiteService } from './scoreCardSite.service';
+
+
+@Module({
+    imports: [OracleModule, HttpModule, RestClientModule],
+    controllers: [SCSiteController],
+    providers: [SCSiteService],
+})
+export class SCSiteModule { }
+
+********
 import { Controller, Get, Param, Res, Req, Query } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
@@ -70,6 +86,22 @@ export class SCSiteService {
     }
 }
 ========================
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios'
+import { OracleModule } from '../common/database/oracle.module';
+import { RestClientModule } from '../common/util/restClient/restClient.module';
+import { SCSwitchController } from './scoreCardSwitch.controller';
+import { SCSwitchService } from './scoreCardSwitch.service';
+
+
+@Module({
+    imports: [OracleModule, HttpModule, RestClientModule],
+    controllers: [SCSwitchController],
+    providers: [SCSwitchService],
+})
+export class SCSwitchModule { }
+
+*********
 import { Controller, Get, Param, Res, Req, Query } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
