@@ -44,7 +44,7 @@ describe('SCSiteController', () => {
       const url = 'http://example.com/opsscorecard/testLoginId/pm';
 
       // Mocking the getDetails method to simulate an error response
-      jest.spyOn(service, 'getDetails').mockImplementation((req: Request, res: Response, url: string) => {
+      jest.spyOn(service, 'getDetails').mockImplementation((req, res, url) => {
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error in getting details of scorecard' });
       });
 
