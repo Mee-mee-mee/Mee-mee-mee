@@ -1,0 +1,121 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { SCSiteController } from './scoreCardSite.controller';
+import { SCSiteService } from './scoreCardSite.service';
+import { RestClient } from '../common/util/restClient/restClient.service';
+import Logger from '../common/logger/logger';  // Assuming Logger is the default export
+import { Response, Request } from 'express';
+
+jest.mock('../common/util/restClient/restClient.service');
+jest.mock('../common/logger/logger');
+
+describe('SCSiteController', () => {
+  let controller: SCSiteController;
+  let service: SCSiteService;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [SCSiteController],
+      providers: [SCSiteService, RestClient, Logger],
+    }).compile();
+
+    controller = module.get<SCSiteController>(SCSiteController);
+    service = module.get<SCSiteService>(SCSiteService);
+
+    mockRequest = {};
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      send: jest.fn(),
+    };
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getPmDetails', () => {
+    it('should return PM details successfully', async () => {
+      const loginId = 'user123';
+      const query = { isGsamOffshore: 'true' };
+
+      // Mocking service method
+      const serviceSpy = jest.spyOn(service, 'getDetails').mockResolvedValueOnce(undefined);  // Correcting the resolved value to `undefined`
+
+      await controller.getPmDetails(mockRequest as Request, mockResponse as Response, loginId, query.isGsamOffshore);
+
+      expect(serviceSpy).toHaveBeenCalledWith(mockRequest, mockResponse, expect.any(String));
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.send).toHaveBeenCalled();
+    });
+
+    it('should handle errors and return 500 response', async () => {
+      const loginId = 'user123';
+      const query = { isGsamOffshore: 'false' };
+
+      // Mocking service method to throw an error
+      const serviceSpy = jest.spyOn(service, 'getDetails').mockRejectedValueOnce(new Error('Service error'));
+
+      await controller.getPmDetails(mockRequest as Request, mockResponse as Response, loginId, query.isGsamOffshore);
+
+      expect(serviceSpy).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith('Error in getting the details');
+    });
+  });
+});
+============
+import { Test, TestingModule } from '@nestjs/testing';
+import { SCSiteService } from './scoreCardSite.service';
+import { RestClient } from '../common/util/restClient/restClient.service';
+
+jest.mock('../common/util/restClient/restClient.service');
+
+describe('SCSiteService', () => {
+  let service: SCSiteService;
+  let restClient: RestClient;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [SCSiteService, RestClient],
+    }).compile();
+
+    service = module.get<SCSiteService>(SCSiteService);
+    restClient = module.get<RestClient>(RestClient);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('getDetails', () => {
+    it('should return data successfully', async () => {
+      const url = 'http://example.com/api/data';
+      const mockData = { data: 'sample data' };
+
+      // Mock RestClient.get1 method to return a resolved promise
+      jest.spyOn(restClient, 'get1').mockResolvedValueOnce(mockData);
+
+      const mockResponse = { send: jest.fn(), status: jest.fn().mockReturnThis() };
+      await service.getDetails({}, mockResponse, url);
+
+      expect(restClient.get1).toHaveBeenCalledWith(url, expect.any(Object), '', '', '');
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.send).toHaveBeenCalledWith(mockData.data);
+    });
+
+    it('should handle errors and call res.status(500)', async () => {
+      const url = 'http://example.com/api/data';
+
+      // Mock RestClient.get1 to reject with an error
+      jest.spyOn(restClient, 'get1').mockRejectedValueOnce(new Error('Request failed'));
+
+      const mockResponse = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      await service.getDetails({}, mockResponse, url);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith('Error in getting the details');
+    });
+  });
+});
