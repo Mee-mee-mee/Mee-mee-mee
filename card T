@@ -45,6 +45,86 @@ describe('SCSiteController', () => {
       const url = 'http://example.com/opsscorecard/testLoginId/pm';
       const mockResponse = { data: 'scorecard data' };
 
+      // Mocking the getDetails method to invoke response correctly
+      jest.spyOn(service, 'getDetails').mockImplementation((req, res, url) => {
+        res.status(HttpStatus.OK).send(mockResponse.data);
+      });
+
+      await controller.getPmDetails(loginId, duein, req, res);
+
+      expect(service.getDetails).toHaveBeenCalledWith(req, res, url);
+      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+      expect(res.send).toHaveBeenCalledWith(mockResponse.data);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const loginId = 'testLoginId';
+      const duein = 'false';
+      const url = 'http://example.com/opsscorecard/testLoginId/pm';
+
+      const error = new Error('Error getting details');
+      jest.spyOn(service, 'getDetails').mockImplementation((req, res, url) => {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error in getting details of scorecard' });
+      });
+
+      await controller.getPmDetails(loginId, duein, req, res);
+
+      expect(service.getDetails).toHaveBeenCalledWith(req, res, url);
+      expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Error in getting details of scorecard' });
+    });
+  });
+});
+
+
+###################
+import { Test, TestingModule } from '@nestjs/testing';
+import { SCSiteController } from './scoreCardSite.controller';
+import { SCSiteService } from './scoreCardSite.service';
+import { HttpStatus } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+import { Request, Response } from 'express';
+
+describe('SCSiteController', () => {
+  let controller: SCSiteController;
+  let service: SCSiteService;
+  let res: Response;
+  let req: Request;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [SCSiteController],
+      providers: [
+        {
+          provide: SCSiteService,
+          useValue: {
+            getDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<SCSiteController>(SCSiteController);
+    service = module.get<SCSiteService>(SCSiteService);
+    req = {} as Request;
+    res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+      json: jest.fn(),
+    } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getPmDetails', () => {
+    it('should return scorecard details successfully', async () => {
+      const loginId = 'testLoginId';
+      const duein = 'false';
+      const url = 'http://example.com/opsscorecard/testLoginId/pm';
+      const mockResponse = { data: 'scorecard data' };
+
       jest.spyOn(service, 'getDetails').mockResolvedValue(mockResponse);
 
       await controller.getPmDetails(loginId, duein, req, res);
