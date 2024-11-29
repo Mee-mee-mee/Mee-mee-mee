@@ -1,0 +1,102 @@
+import { Controller, Get, Param, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+const config = require('config');
+const flag = config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+export class PmMgrSummController {
+  constructor(private readonly pmService: PmMgrSummService) { }
+
+  // Get PM Summary for Manager details
+  @Get('/mgr/:mgrId/pm/summary')
+  async getPmDetails(
+    @Param('mgrId') mgrId: string,
+    @Query('duein') duein: string, // Retrieve dueIn as a query parameter
+    @Res() res: Response,
+  ) {
+    logger.info('Processing request to fetch PM Summary for Manager.');
+    logger.debug('Request parameters:', { mgrId, duein });
+
+    try {
+      let url: string;
+
+      if (flag) {
+        logger.debug('Flag is enabled. Using iopPmService URL.');
+        url = config.iopPmService.url;
+      } else {
+        logger.debug('Flag is disabled. Using taskService URL.');
+        url = config.taskService.iopTask;
+      }
+
+      logger.info('Determining base URL for PM Manager Summary.');
+      const newUrl = `${url}/mgr/${mgrId}/pm/summary`;
+      logger.debug('Constructed URL:', { newUrl });
+
+      const parameters = { duein };
+      logger.debug('Query parameters:', { parameters });
+
+      logger.info('Fetching PM Summary details from service.');
+      const result = await this.pmService.getDetails(parameters, newUrl);
+      logger.debug('Service response:', { result });
+
+      logger.info('Successfully retrieved PM Summary for Manager.');
+      return res.status(200).json(result);
+    } catch (err) {
+      logger.error('Error in getting tasks.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(err.status || 500).json({ error: err.message || 'Error in getting tasks' });
+    }
+  }
+}         
+
+============
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+const config = require('config');
+
+@Injectable()
+export class PmMgrSummService {
+  constructor(private readonly restClient: RestClient) { }
+
+  // This service is responsible for getting information from TaskService
+  async getDetails(parameters: { [key: string]: any }, url: string): Promise<any> {
+    const headers = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      // Make sure to pass parameters as an object
+
+      const response = await this.restClient.get1(url, headers, "", "", parameters).toPromise()
+
+      return response.data;
+    } catch (err) {
+      // Handle errors appropriately
+      throw new HttpException(
+        { message: 'Error in getting the details', error: err.message },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
+
+============
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios'
+import { OracleModule } from '../common/database/oracle.module';
+import { RestClientModule } from '../common/util/restClient/restClient.module';
+import { PmMgrSummService } from './pmMgrSum.service';
+import { PmMgrSummController } from './pmMgrSum.controller';
+
+
+@Module({
+  imports: [OracleModule, HttpModule, RestClientModule],
+  controllers: [PmMgrSummController],
+  providers: [PmMgrSummService],
+})
+export class PmMgrSummModule { }
