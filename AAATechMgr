@@ -1,3 +1,34 @@
+SELECT DISTINCT a.STATUS_ID
+FROM opspm.PM_TASK_AVAILABLE_STATUS_ITEM a
+JOIN OPSPM.PM_LOCATION_TASK b
+ON a.TASK_ID = b.TASK_ID
+WHERE b.PM_HEADER_ID = '59B52A661D399EE671317A3A7EEBDF51'
+order by a.STATUS_ID;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const queries = {
     getPmMgrSumm: `
         SELECT 
