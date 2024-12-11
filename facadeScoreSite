@@ -1,0 +1,86 @@
+import { Controller, Get, Param, Res, Req, Query } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { SCSiteService } from './scoreCardSite.service';
+
+const config = require('config');
+const flag = config.flag;
+
+@Controller('facade')
+@ApiTags('Default')
+export class SCSiteController {
+    constructor(private readonly SCSiteService: SCSiteService) { }
+
+    //get PM Task details
+    @Get('/opsscorecard/:loginId/pm')
+    async getPmDetails(
+        @Param('loginId') loginId: string,
+        @Query('isGsamOffshore') duein: string, // Retrieve isGsamOffshore as a query parameter
+        @Req() req: Request,
+        @Res() res: Response
+    ) {
+        try {
+            console.log(" inside controller");
+
+            //changing flag as false
+            let flag = false;
+            let url;
+            if (flag) {
+
+                url = config.iopPmService.url;
+            } else {
+
+                url = config.dashboardService.dashboard;
+
+            }
+            const newUrl = url + `/opsscorecard/${loginId}/pm`;
+            return this.SCSiteService.getDetails(req, res, newUrl);
+        } catch (err) {
+            logger.error('Error in getting details of scorecard', err);
+            return res.status(500).json({ error: 'Error in getting details of scorecard' });
+        }
+    }
+}
+=====================
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios'
+import { OracleModule } from '../common/database/oracle.module';
+import { RestClientModule } from '../common/util/restClient/restClient.module';
+import { SCSiteController } from './scoreCardSite.controller';
+import { SCSiteService } from './scoreCardSite.service';
+
+
+@Module({
+    imports: [OracleModule, HttpModule, RestClientModule],
+    controllers: [SCSiteController],
+    providers: [SCSiteService],
+})
+export class SCSiteModule { }
+==============
+import { Injectable } from '@nestjs/common';
+import { RestClient } from '../common/util/restClient/restClient.service';
+const config = require('config');
+@Injectable()
+export class SCSiteService {
+    constructor(private restClient: RestClient) {
+        this.getDetails = this.getDetails.bind(this);
+    }
+    //This service is responsible to get Score Card details for site
+    async getDetails(req, res, url) {
+        let headers = {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+        };
+        await this.restClient
+            .get1(url, headers, '', '', '')
+            .toPromise()
+            .then(async (data) => {
+                let output = data.data;
+                res?.status(200).send(output);
+            })
+            .catch((err) => {
+                res.status(500).json('Error in getting the details', err);
+            });
+    }
+}
