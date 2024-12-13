@@ -164,3 +164,75 @@ describe('SCSwitchController', () => {
 
 
       ++++++++++++++++++++++++++++++++++++++++
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { SCSwitchService } from './scoreCardSwitch.service';
+import { HttpException } from '@nestjs/common';
+import { Response } from 'express';
+import { SCSwitchController } from './scoreCardSwitch.controller';
+
+describe('SCSwitchController', () => {
+  let controller: SCSwitchController;
+  let service: SCSwitchService;
+
+  // Mock Response Object
+  const mockResponse = (): Partial<Response> => {
+    return {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [SCSwitchController],
+      providers: [
+        {
+          provide: SCSwitchService,
+          useValue: {
+            getDetails: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<SCSwitchController>(SCSwitchController);
+    service = module.get<SCSwitchService>(SCSwitchService);
+  });
+
+  describe('getPmDetails', () => {
+    it('should return data successfully', async () => {
+      const res = mockResponse() as Response; // Type assertion
+      const loginId = '1';
+      const isGsamOffshore = false;
+      const resultData = { data: 'some data' };
+
+      // Mock the service method to resolve with resultData
+      jest.spyOn(service, 'getDetails').mockResolvedValue(resultData);
+
+      // Call the controller method
+      await controller.getPmDetails(loginId, isGsamOffshore, res);
+
+      // Assert that the status was set to 200 and the data was returned in the response
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(resultData);
+    });
+
+    it('should handle errors', async () => {
+      const res = mockResponse() as Response; // Type assertion
+      const loginId = '1';
+      const isGsamOffshore = false;
+      const errorMessage = 'Error fetching data';
+
+      // Mock the service method to reject with an error
+      jest.spyOn(service, 'getDetails').mockRejectedValue(new HttpException(errorMessage, 500));
+
+      // Call the controller method
+      await controller.getPmDetails(loginId, isGsamOffshore, res);
+
+      // Assert that the status was set to 500 and the error message was returned
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: "Error in getting details of scorecard" });
+    });
+  });
+});
