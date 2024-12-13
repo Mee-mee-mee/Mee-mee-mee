@@ -1,0 +1,95 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { SCSwitchService } from './scoreCardSwitch.service';
+import { HttpException } from '@nestjs/common';
+import { Response } from 'express';
+import { SCSwitchController } from './scoreCardSwitch.controller';
+
+describe('PmMgrSummController', () => {
+    let controller: SCSwitchController;
+    let service: SCSwitchService;
+
+    const mockResponse = (): Partial<Response> => {
+        return {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+        };
+    };
+
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            controllers: [SCSwitchController],
+            providers: [
+                {
+                    provide: SCSwitchService,
+                    useValue: {
+                        getDetails: jest.fn(),
+                    },
+                },
+            ],
+        }).compile();
+
+        controller = module.get<SCSwitchController>(SCSwitchController);
+        service = module.get<SCSwitchService>(SCSwitchService);
+    });
+    
+
+    describe('getscorecardDetails', () => {
+        it('should return data successfully', async () => {
+            const res = mockResponse() as Response; // Type assertion
+            const loginId = '1';
+            const isGsamOffshore=false;
+            const resultData = { data: 'some data' };
+
+            jest.spyOn(service, 'getDetails').mockResolvedValue(resultData);
+
+            await controller.getPmDetails(loginId,isGsamOffshore,res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(resultData);
+        });
+
+        it('should handle errors', async () => {
+            const res = mockResponse() as Response; // Type assertion
+            const loginId = '1';
+            const isGsamOffshore=false;
+            const errorMessage = 'Error fetching data';
+
+            jest.spyOn(service, 'getDetails').mockRejectedValue(new HttpException(errorMessage, 500));
+
+            await controller.getPmDetails(loginId,isGsamOffshore, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.json).toHaveBeenCalledWith({ error: "Error in getting details of scorecard" });
+        });
+    });
+});
+
+===================
+
+ FAIL  scoreCardSwitch/scoreCardSwitch.controller.spec.ts (9.508 s)
+  ● PmMgrSummController › getscorecardDetails › should return data successfully
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: 200
+    Received: 500
+
+    Number of calls: 1
+
+      45 |             await controller.getPmDetails(loginId,isGsamOffshore,res);
+      46 |
+    > 47 |             expect(res.status).toHaveBeenCalledWith(200);
+         |                                ^
+      48 |             expect(res.json).toHaveBeenCalledWith(resultData);
+      49 |         });
+      50 |
+
+      at Object.<anonymous> (scoreCardSwitch/scoreCardSwitch.controller.spec.ts:47:32)
+
+
+
+
+
+
+
+      ++++++++++++++++++++++++++++++++++++++++
