@@ -155,3 +155,178 @@ export const queries = {
             WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY')|| '23:59:59', 'DD-MON-YYYY HH24:MI:SS')
           END`,
 };
+TTTTTTTTTTT
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { TaskForManagerController } from './getTaskForManager.controller';
+import { TaskForManagerService } from './getTaskForManager.service';
+import { Response, Request } from 'express';
+
+jest.mock('./getTaskForManager.service'); // Mocking the service layer
+
+describe('TaskForManagerController', () => {
+  let controller: TaskForManagerController;
+  let service: TaskForManagerService;
+  let req: Request;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [TaskForManagerController],
+      providers: [TaskForManagerService],
+    }).compile();
+
+    controller = module.get<TaskForManagerController>(TaskForManagerController);
+    service = module.get<TaskForManagerService>(TaskForManagerService);
+
+    req = { headers: {} } as Request;
+    res = { send: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should successfully fetch PM site summary', async () => {
+    const mockData = { taskcounts: [{ siteid: '1', site_name: 'Site 1' }] };
+    jest.spyOn(service, 'getTasks').mockResolvedValue(mockData);
+
+    await controller.getTaskForManager('loginId1', '30', req, res);
+
+    expect(res.send).toHaveBeenCalledWith(mockData);
+  });
+
+  it('should handle error when fetching PM site summary', async () => {
+    const error = new Error('Error fetching PM site summary');
+    jest.spyOn(service, 'getTasks').mockRejectedValue(error);
+
+    await controller.getTaskForManager('loginId1', '30', req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Error fetching PM site summary', error: error.message });
+  });
+});
+==========
+import { Test, TestingModule } from '@nestjs/testing';
+import { TaskForManagerService } from './getTaskForManager.service';
+import TaskForManagerRepo from './getTaskForManager.repo';
+
+jest.mock('./getTaskForManager.repo'); // Mocking the repository layer
+
+describe('TaskForManagerService', () => {
+  let service: TaskForManagerService;
+  let repo: TaskForManagerRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TaskForManagerService, TaskForManagerRepo],
+    }).compile();
+
+    service = module.get<TaskForManagerService>(TaskForManagerService);
+    repo = module.get<TaskForManagerRepo>(TaskForManagerRepo);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should fetch tasks and transform data correctly', async () => {
+    const mockSiteData = [
+      {
+        siteid: '1',
+        site_unid: 'unid1',
+        site_name: 'Site 1',
+        switch: 'Switch 1',
+        numtasks: 10,
+        numtasksdone: 5,
+        duein: '30',
+      },
+    ];
+    const transformedData = {
+      taskcounts: [
+        {
+          siteid: '1',
+          site_unid: 'unid1',
+          site_name: 'Site 1',
+          switch: 'Switch 1',
+          tasks: [{ duein: '30', pm: { total: 10, done: 5, perc: 50 } }],
+        },
+      ],
+    };
+    jest.spyOn(repo, 'getSiteSummary').mockResolvedValue(mockSiteData);
+
+    const result = await service.getTasks('loginId1', '30');
+    expect(result).toEqual(transformedData);
+  });
+
+  it('should handle errors when fetching tasks', async () => {
+    const error = new Error('Database error');
+    jest.spyOn(repo, 'getSiteSummary').mockRejectedValue(error);
+
+    await expect(service.getTasks('loginId1', '30')).rejects.toThrow(error);
+  });
+});
+
+========
+import { Test, TestingModule } from '@nestjs/testing';
+import TaskForManagerRepo from './getTaskForManager.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './getTaskForManager.qFactory';
+
+jest.mock('../common/database/oracle'); // Mocking the Oracle class
+
+describe('TaskForManagerRepo', () => {
+  let repo: TaskForManagerRepo;
+  let oracle: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TaskForManagerRepo, Oracle],
+    }).compile();
+
+    repo = module.get<TaskForManagerRepo>(TaskForManagerRepo);
+    oracle = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
+  });
+
+  it('should return transformed data from the database', async () => {
+    const mockDbResult = [
+      {
+        siteid: '1',
+        site_unid: 'unid1',
+        site_name: 'Site 1',
+        switch_name: 'Switch 1',
+        num_of_tasks: 10,
+        num_of_tasks_done: 5,
+        end_date: '2023-12-31',
+      },
+    ];
+    const transformedResult = [
+      {
+        siteid: '1',
+        site_unid: 'unid1',
+        site_name: 'Site 1',
+        switch: 'Switch 1',
+        numtasks: 10,
+        numtasksdone: 5,
+        dueDate: expect.anything(),
+        duein: '30',
+      },
+    ];
+
+    jest.spyOn(oracle, 'executeQuery').mockResolvedValue({ rows: mockDbResult });
+
+    const result = await repo.getSiteSummary('loginId1', '30');
+    expect(result).toEqual(transformedResult);
+  });
+
+  it('should handle errors when fetching site summary data', async () => {
+    const error = new Error('Database query failed');
+    jest.spyOn(oracle, 'executeQuery').mockRejectedValue(error);
+
+    await expect(repo.getSiteSummary('loginId1', '30')).rejects.toThrow(error);
+  });
+});
