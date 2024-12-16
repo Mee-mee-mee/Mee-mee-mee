@@ -392,3 +392,95 @@ describe('PmSiteRepo', () => {
     }
   });
 });
+
+
+
+***************************
+// pmSite.repo.spec.ts
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSiteRepo } from './pmSite.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmSite.qFactory';
+import * as commonUtil from '../common/utils/common_util';  // Import the module that exports reformatDates
+
+// Mock the Oracle service
+jest.mock('../common/database/oracle');
+
+// Mock the entire common_util module
+jest.mock('../common/utils/common_util', () => ({
+  reformatDates: jest.fn(),
+}));
+
+describe('PmSiteRepo', () => {
+  let pmSiteRepo: PmSiteRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [PmSiteRepo, Oracle],
+    }).compile();
+
+    pmSiteRepo = module.get<PmSiteRepo>(PmSiteRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(pmSiteRepo).toBeDefined();
+  });
+
+  it('should return data when getPmBySite is called', async () => {
+    const mockData = {
+      rows: [
+        {
+          LIST_NAME: 'Task 1',
+          FREQUENCY: 'Monthly',
+          SWITCH_NAME: 'Switch A',
+          SITE_NAME: 'Site A',
+          SITE_UNID: '123',
+          NUM_OF_TASKS: 5,
+          NUM_OF_TASKS_DONE: 3,
+          START_DATE: '2021-01-01',
+          END_DATE: '2021-01-31',
+          PM_UNID: '456',
+          PMD_WIDGET_ID: '789',
+          STATUS: 'Active',
+        },
+      ],
+    };
+
+    // Mock the executeQuery method from Oracle
+    jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(mockData);
+
+    // Mock the reformatDates function to return a fixed date string
+    commonUtil.reformatDates.mockReturnValue('2021-01-01');
+
+    const result = await pmSiteRepo.getPmBySite('123');
+    expect(result).toEqual([
+      {
+        listname: 'Task 1',
+        frequency: 'Monthly',
+        switch: 'Switch A',
+        site_name: 'Site A',
+        site_unid: '123',
+        numtasks: 5,
+        numtasksdone: 3,
+        startdate: '2021-01-01',
+        stopdate: '2021-01-31',
+        pm_unid: '456',
+        pmd_widget_id: '789',
+        pmd_widget_status: 'Active',
+      },
+    ]);
+  });
+
+  it('should throw an error if there is a problem retrieving data', async () => {
+    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Database error'));
+
+    try {
+      await pmSiteRepo.getPmBySite('123');
+    } catch (error) {
+      expect(error.message).toBe('Database error');
+    }
+  });
+});
