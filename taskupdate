@@ -1,0 +1,115 @@
+import { Controller, Param, Put, Req, Res } from '@nestjs/common';
+import { UpdateTaskService } from './UpdateTask.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+const config = require('config');
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class UpdateTaskController {
+  constructor(private readonly UpdateTaskService: UpdateTaskService) {}
+
+  @Put('/update/pmtasks')
+  async putTaskReading(@Req() req: Request, @Res() res: Response) {
+    logger.info('Processing request to update PM tasks.');
+    logger.debug('Request body:', { body: req.body });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Updating PM task details.');
+      const data: any = await this.UpdateTaskService.updateDetails(req);
+      logger.debug('Update response:', { data });
+
+      logger.info('Successfully updated PM task details.');
+      return res.send(data);
+    } catch (err) {
+      logger.error('Error in updating PM task.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  }
+}
++++
+import { Injectable } from '@nestjs/common';
+import  UpdateTaskRepo from  './UpdateTask.repo';
+
+
+@Injectable()
+export class UpdateTaskService {
+
+  constructor(private UpdateTaskRepo: UpdateTaskRepo) {}
+  async updateDetails(req) {
+      try {
+        const data = await this.UpdateTaskRepo.updatetask(req);
+        const data_json= {"message": "Readings added/updated successfully","pm": req.body.pm}
+        return data_json;
+      } catch (error) {
+        throw error;
+      }
+}
+    }
+
++++++++
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './UpdateTask.qFactory';
+
+@Injectable()
+export default class UpdateTaskRepo {
+  constructor(private oraUtil: Oracle) {}
+
+  async updatetask(req: any) {
+    try {
+      const query1 = queries.updatetask;
+      const query2 = queries.updateWidgetDetails;
+      const pmtasks = req.body.pm.pmtasks;
+      const site_unid = req.body.pm.site_unid;
+      const PM_UNID = req.body.pm.pm_unid;
+      const META_LAST_UPDATED_BY = req.body.pm.userid;
+      const PMD_WIDGET_ID = req.body.pm.pmd_widget_id;
+      let result;
+      const taskstoupdate=pmtasks.filter(task =>task.isStatusChanged === 1 || task.isCommentChanged===1 || task.status_value);
+    
+      for (let task of taskstoupdate) {
+        let status = task['status'];
+        let task_unid = task['task_unid'];
+        let comments = task['comments'];
+        let specifictask_value=task['specifictask_value'];
+        const qParams1 = [status, META_LAST_UPDATED_BY, comments, META_LAST_UPDATED_BY,specifictask_value,task_unid];
+        const data: any = await this.oraUtil.executeQuery(query1, qParams1);
+        result = data.rowsAffected;
+      }
+      const qParams2 = [site_unid, PM_UNID, PMD_WIDGET_ID ];
+      await this.oraUtil.executeQuery(query2, qParams2);
+
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
++++++++
+export const queries = {
+  updatetask: `UPDATE opspm.pm_location_task 
+    SET STATUS_ID = :STATUS,
+    META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+    META_LAST_UPDATED_BY = :META_LAST_UPDATED_BY,
+    COMMENTS = :COMMENTS,
+    STATUSTIMESTAMP = sys_extract_utc(systimestamp),
+    STATUSIDSTAMP = :META_LAST_UPDATED_BY,
+    SPECIFIC_DATA_VALUE=:SPECIFIC_TASK_VALUE
+    WHERE META_UNIVERSAL_ID = :TASK_UNID`,
+
+    updateWidgetDetails: `UPDATE pmd_widget_pm_details w
+    SET w.num_of_tasks_done = (
+      SELECT COUNT(*)
+      FROM opspm.pm_location_task t
+      WHERE 
+      t.PM_HEADER_ID = w.PM_UNID
+      AND t.STATUS_ID != 'I'
+    ) WHERE w.pm_unid IN (
+    SELECT PM_HEADER_ID FROM OPSPM.pm_location_task WHERE SITE_UNID = :SITE_UNID AND PM_HEADER_ID = :PM_UNID AND PMD_WIDGET_ID = :PMD_WIDGET_ID
+    )`
+}
