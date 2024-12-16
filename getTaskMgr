@@ -1,0 +1,157 @@
+import { Controller, Param, Get, Req, Res, Query } from '@nestjs/common';
+import { TaskForManagerService } from './getTaskForManager.service';
+import { ApiTags } from '@nestjs/swagger';
+import { Request, Response } from 'express';
+import logger from '../common/logger/logger';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class TaskForManagerController {
+  constructor(private readonly TaskForManagerService: TaskForManagerService) {}
+
+  // Fetch PM site summary for a given loginId and duein filter
+  @Get('/mgr/:loginId/pm/sitesummary')
+  async getTaskForManager(
+    @Param('loginId') loginId: string,
+    @Query('duein') duein: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    logger.info('Processing request to fetch PM site summary.');
+    logger.debug('Request parameters:', { loginId, duein });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Fetching tasks for manager.', { loginId, duein });
+      const data = await this.TaskForManagerService.getTasks(loginId, duein);
+      logger.debug('Retrieved data:', { data });
+      logger.info('Successfully fetched PM site summary.');
+      return res.send(data);
+    } catch (err) {
+      logger.error('Error fetching PM site summary.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res
+        .status(500)
+        .json({ message: 'Error fetching PM site summary', error: err.message });
+    }
+  }
+}
+++++
+import { Injectable } from '@nestjs/common';
+import TaskForManagerRepo from './getTaskForManager.repo';
+
+@Injectable()
+export class TaskForManagerService {
+  constructor(private readonly TaskForManagerRepo: TaskForManagerRepo) {}
+
+  async getTasks(loginId: string, duein: string) {
+    try {
+      const data = await this.TaskForManagerRepo.getSiteSummary(loginId, duein);
+      // Process the data to fit the required structure
+      const transformedData = data.map((site: any) => {
+        const totalTasks = site.numtasks || 0;
+        const doneTasks = site.numtasksdone || 0;
+        const perc = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 100;
+        const tasks = [
+          {
+            duein: site.duein,
+            pm: {
+              total: totalTasks,
+              done: doneTasks,
+              perc: perc,
+            },
+          },
+        ];
+        return {
+          siteid: site.siteid,
+          site_unid: site.site_unid,
+          site_name: site.site_name,
+          switch: site.switch,
+          tasks: tasks,
+        };
+      });
+      return { taskcounts: transformedData };
+    } catch (error) {
+      throw error;
+    }
+  }
+}
+
++++
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './getTaskForManager.qFactory';
+
+@Injectable()
+export default class TaskForManagerRepo {
+  constructor(private oraUtil: Oracle) {}
+
+  async getSiteSummary(loginId: string, duein: string) {
+    try {
+      const query = queries.getSummary; // Use the updated query from qFactory
+      const qParams = {
+        loginId: loginId,
+        duein: duein,
+      };
+      let data: any = await this.oraUtil.executeQuery(query, qParams);
+      data = data.rows; // Assuming `data.rows` contains the result
+      console.log("----->",data)
+      data = data.map((item) => {
+        const lowerCaseItem = {};
+        Object.keys(item).forEach((key) => {
+          lowerCaseItem[key.toLowerCase()] = item[key];
+        });
+        return lowerCaseItem;
+      });
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
+++++
+export const queries = {
+  getSummary: `
+      SELECT 
+        st.SITE_ID as siteid,
+        pmd.SITE_UNID AS site_unid,
+        pmd.SITE_NAME AS site_name,
+        pmd.SWITCH_NAME AS switch,
+        pmd.NUM_OF_TASKS AS numtasks,
+        pmd.NUM_OF_TASKS_DONE AS numtasksdone,
+        pmd.END_DATE AS pm_task_stop_time,
+        CASE
+          WHEN :duein = '30' THEN SYSDATE + 30
+          WHEN :duein = '60' THEN SYSDATE + 60
+          WHEN :duein = '90' THEN SYSDATE + 90
+          WHEN :duein = '180' THEN SYSDATE + 180
+          WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY')|| '23:59:59', 'DD-MON-YYYY HH24:MI:SS')
+        END AS dueDate,
+        CASE
+          WHEN pmd.END_DATE <= 
+              CASE
+                WHEN :duein = '30' THEN SYSDATE + 30
+                WHEN :duein = '60' THEN SYSDATE + 60
+                WHEN :duein = '90' THEN SYSDATE + 90
+                WHEN :duein = '180' THEN SYSDATE + 180
+                WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY')|| '23:59:59', 'DD-MON-YYYY HH24:MI:SS')
+              END
+          THEN :duein
+        END AS duein
+      FROM 
+        PMD_WIDGET_PM_DETAILS pmd
+         LEFT JOIN
+      opsinv.SITE_DATA_NEW st ON st.META_UNIVERSALID=pmd.SITE_UNID
+      WHERE 
+        st.MGR_ID = :loginId
+      AND 
+        pmd.END_DATE <= 
+          CASE
+            WHEN :duein = '30' THEN SYSDATE + 30
+            WHEN :duein = '60' THEN SYSDATE + 60
+            WHEN :duein = '90' THEN SYSDATE + 90
+            WHEN :duein = '180' THEN SYSDATE + 180
+            WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY')|| '23:59:59', 'DD-MON-YYYY HH24:MI:SS')
+          END`,
+};
