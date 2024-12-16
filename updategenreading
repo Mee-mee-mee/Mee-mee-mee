@@ -259,3 +259,46 @@ describe('UpdateGenReadingRepo', () => {
   });
 });
 
+===============================
+  updateGenReading/updategenreading.controller.spec.ts (9.651 s)
+  ● UpdateGenReadingController › should be defined
+
+    TypeError: Cannot read properties of undefined (reading 'info')
+
+      41 |     } as unknown as Response;
+      42 |
+    > 43 |     logInfo = logger.info as jest.Mock;
+         |                      ^
+      44 |     logError = logger.error as jest.Mock;
+      45 |   });
+      46 |
+
+      at Object.<anonymous> (updateGenReading/updategenreading.controller.spec.ts:43:22)
+
+  ● UpdateGenReadingController › should call the update service and return data on success
+
+    TypeError: Cannot read properties of undefined (reading 'info')
+
+      41 |     } as unknown as Response;
+      42 |
+    > 43 |     logInfo = logger.info as jest.Mock;
+         |                      ^
+      44 |     logError = logger.error as jest.Mock;
+      45 |   });
+      46 |
+
+      at Object.<anonymous> (updateGenReading/updategenreading.controller.spec.ts:43:22)
+
+  ● UpdateGenReadingController › should return an error response and log error on failure
+
+    TypeError: Cannot read properties of undefined (reading 'info')
+
+      41 |     } as unknown as Response;
+      42 |
+    > 43 |     logInfo = logger.info as jest.Mock;
+         |                      ^
+      44 |     logError = logger.error as jest.Mock;
+      45 |   });
+      46 |
+
+      at Object.<anonymous> (updateGenReading/updategenreading.controller.spec.ts:43:22)
