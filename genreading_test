@@ -80,3 +80,192 @@ import GenreadingRepo from './genreading.repo';
   providers: [GenreadingService,GenreadingRepo],
 })
 export class GenReadingModule {}
+"""""""""""""""""""""""""""""""""""
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { GenReadingController } from './genreading.controller';
+import { GenreadingService } from './genreading.service';
+import { Response, Request } from 'express';
+import { Logger } from '@nestjs/common';
+import * as config from 'config';
+
+// Mock the GenreadingService
+jest.mock('./genreading.service');
+
+describe('GenReadingController', () => {
+  let controller: GenReadingController;
+  let genreadingService: GenreadingService;
+  let req: Request;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [GenReadingController],
+      providers: [GenreadingService],
+    }).compile();
+
+    controller = module.get<GenReadingController>(GenReadingController);
+    genreadingService = module.get<GenreadingService>(GenreadingService);
+
+    // Mocking the request and response objects
+    req = {
+      headers: {},
+    } as unknown as Request;
+    res = {
+      send: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should return data when getGenReading is called', async () => {
+    const mockData = { key: 'value' };
+    jest.spyOn(genreadingService, 'GenData').mockResolvedValue(mockData);
+
+    await controller.getGenReading(req, res);
+
+    expect(res.send).toHaveBeenCalledWith(mockData);
+  });
+
+  it('should handle errors and return 500 if GenData fails', async () => {
+    const error = new Error('Internal error');
+    jest.spyOn(genreadingService, 'GenData').mockRejectedValue(error);
+
+    await controller.getGenReading(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Internal Server Error',
+      error: error.message,
+    });
+  });
+
+  it('should log information during request processing', async () => {
+    const mockData = { key: 'value' };
+    jest.spyOn(genreadingService, 'GenData').mockResolvedValue(mockData);
+
+    const logInfo = jest.spyOn(Logger, 'log');
+    const logError = jest.spyOn(Logger, 'error');
+
+    await controller.getGenReading(req, res);
+
+    expect(logInfo).toHaveBeenCalledWith('Processing request for GenReading.');
+    expect(logInfo).toHaveBeenCalledWith('Starting data retrieval from genreadingService.');
+    expect(logInfo).toHaveBeenCalledWith('Data retrieval successful.', { retrievedDataSize: 1 });
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it('should log error details if GenData fails', async () => {
+    const error = new Error('Internal error');
+    jest.spyOn(genreadingService, 'GenData').mockRejectedValue(error);
+
+    const logError = jest.spyOn(Logger, 'error');
+
+    await controller.getGenReading(req, res);
+
+    expect(logError).toHaveBeenCalledWith('An error occurred during data retrieval.', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+    });
+  });
+});
+_______________________
+
+import { Test, TestingModule } from '@nestjs/testing';
+import { GenreadingService } from './genreading.service';
+import { GenreadingRepo } from './genreading.repo';
+
+// Mock the repository
+jest.mock('./genreading.repo');
+
+describe('GenreadingService', () => {
+  let genreadingService: GenreadingService;
+  let genreadingRepo: GenreadingRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [GenreadingService, GenreadingRepo],
+    }).compile();
+
+    genreadingService = module.get<GenreadingService>(GenreadingService);
+    genreadingRepo = module.get<GenreadingRepo>(GenreadingRepo);
+  });
+
+  it('should be defined', () => {
+    expect(genreadingService).toBeDefined();
+  });
+
+  it('should call GenreadingRepo and return data', async () => {
+    const mockData = { key: 'value' };
+    jest.spyOn(genreadingRepo, 'getgenreading').mockResolvedValue(mockData);
+
+    const result = await genreadingService.GenData();
+
+    expect(result).toEqual(mockData);
+    expect(genreadingRepo.getgenreading).toHaveBeenCalled();
+  });
+
+  it('should throw an error if GenreadingRepo fails', async () => {
+    const error = new Error('Error in GenreadingRepo');
+    jest.spyOn(genreadingRepo, 'getgenreading').mockRejectedValue(error);
+
+    try {
+      await genreadingService.GenData();
+    } catch (e) {
+      expect(e.message).toBe(error.message);
+    }
+  });
+});
+_________________
+import { Test, TestingModule } from '@nestjs/testing';
+import { GenreadingRepo } from './genreading.repo';
+import { Oracle } from '../common/database/oracle';
+import * as config from 'config';
+
+// Mock the Oracle service
+jest.mock('../common/database/oracle');
+
+describe('GenreadingRepo', () => {
+  let genreadingRepo: GenreadingRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [GenreadingRepo, Oracle],
+    }).compile();
+
+    genreadingRepo = module.get<GenreadingRepo>(GenreadingRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(genreadingRepo).toBeDefined();
+  });
+
+  it('should return data when getgenreading is called', async () => {
+    // Mocking the configuration data
+    const mockData = { key: 'value' };
+    config.genData = mockData;
+
+    const result = await genreadingRepo.getgenreading();
+
+    expect(result).toEqual(mockData);
+  });
+
+  it('should throw an error if there is a problem retrieving data', async () => {
+    jest.spyOn(config, 'genData', 'get').mockImplementationOnce(() => {
+      throw new Error('Error retrieving data');
+    });
+
+    try {
+      await genreadingRepo.getgenreading();
+    } catch (e) {
+      expect(e.message).toBe('Error retrieving data');
+    }
+  });
+});
+___________
