@@ -1,0 +1,87 @@
+import { Controller, Param, Put, Req, Res } from '@nestjs/common';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+const config = require('config');
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class UpdateGenReadingController {
+  constructor(private readonly UpdateGenreadingService: UpdateGenreadingService) {}
+
+  // PM put Genreading
+  @Put('/update/pm/genreading')
+  async putGenReading(@Req() req: Request, @Res() res: Response) {
+    logger.info('Processing request to update PM genreading.');
+    logger.debug('Request body:', { body: req.body });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Updating genreading details.');
+      const data: any = await this.UpdateGenreadingService.updateDetails(req);
+      logger.debug('Update response:', { data });
+
+      logger.info('Successfully updated genreading details.');
+      return res.send(data);
+    } catch (err) {
+      logger.error('Error in updating genreading.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  }
+}
+=======
+import { Injectable } from '@nestjs/common';
+import UpdateGenReadingRepo from './updategenreading.repo';
+
+
+@Injectable()
+export class UpdateGenreadingService {
+
+  constructor(private UpdateGenReadingRepo: UpdateGenReadingRepo) {}
+  async updateDetails(req) {
+      try {
+        const data = await this.UpdateGenReadingRepo.updategenreading(req);
+        const data_json= {"message": "Readings added/updated successfully","data": req.body}
+        return data_json;
+      } catch (error) {
+        throw error;
+      }
+}
+    }
+++++++
+import { Injectable } from '@nestjs/common';
+import  {Oracle}  from '../common/database/oracle';
+import { queries } from './updategenreading.qFactory';
+
+@Injectable()
+export default class UpdateGenReadingRepo {
+  constructor(private oraUtil: Oracle) {}
+
+  async updategenreading(req: any){
+    try{
+       
+    const query = queries.updategenreading;
+    // const SPECIFIC_DATA_VALUE=req.body.readings[0];
+    const SPECIFIC_DATA_VALUE = JSON.stringify(req.body.readings[0])
+    const META_CREATED_BY= req.body.userid; 
+    const pm_unid=req.body.pm_unid;
+    const qParams=[SPECIFIC_DATA_VALUE,META_CREATED_BY,pm_unid];
+    let data: any=await this.oraUtil.executeQuery(query,qParams);
+      data = data.rowsAffected;
+      return data;
+    } catch (error) {
+      throw error;
+    }
+}
+}
+======
+export const queries={
+    updategenreading: `UPDATE opspm.pm_location_task 
+    SET SPECIFIC_DATA_VALUE = :SPECIFIC_DATA_VALUE,
+    META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+    META_LAST_UPDATED_BY = :META_CREATED_BY
+    WHERE PM_HEADER_ID = :pm_unid`
+}
