@@ -1,0 +1,64 @@
+import {
+  Controller,
+  Param,
+  Get,
+  Req,
+  Res,
+  NotFoundException,
+} from '@nestjs/common';
+import { PmSiteTemplateService } from './pmSiteTemplate.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmSiteTemplateController {
+  constructor(private readonly pmSiteTemplateService: PmSiteTemplateService) {}
+
+  // Getting PM Template for a specific site
+  @Get('/site/:siteUnId/pmTemplates')
+  async getPmTemplateBySite(
+    @Param('siteUnId') siteUnId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    logger.info('Processing request to fetch PM templates for a specific site.');
+    logger.debug('Request parameters:', { siteUnId });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Fetching PM templates for site.', { siteUnId });
+      const result: any = await this.pmSiteTemplateService.getPmTemplates(siteUnId);
+      logger.debug('Raw result from service:', { result });
+
+      if (result) {
+        const rows = result?.rows || [];
+        if (rows && rows.length > 0) {
+          logger.info('PM templates found for the site.', { siteUnId, templatesCount: rows.length });
+          const templates = rows.map((template) => ({
+            name: template.TEMPLATE_NAME,
+            listTemplateId: template.LIST_TEMPLATE_ID,
+            description: template.TEMPLATE_DESC,
+            isDisabled: template.IS_DISABLED,
+            frequency: template.FREQUENCY_NAME,
+          }));
+          return res.json({
+            siteUnId: siteUnId,
+            templates,
+          });
+        }
+      }
+
+      logger.info('No PM templates found for the site.', { siteUnId });
+      return res.status(200).json({
+        siteUnid: siteUnId,
+        templates: [],
+      });
+    } catch (err) {
+      logger.error('Error while fetching PM templates for the site.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  }
+}
