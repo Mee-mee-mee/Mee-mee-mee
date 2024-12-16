@@ -1,0 +1,135 @@
+import { Controller, Param, Get, Req, Res } from '@nestjs/common';
+import { PmSiteService } from './pmSite.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+const config = require('config');
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class PmSiteController {
+  constructor(private readonly pmSiteService: PmSiteService) {}
+
+  // Getting PM tasks for a specific site
+  @Get('/site/:siteUnid/pm')
+  async getPmBySite(
+    @Param('siteUnid') siteUnid: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    logger.info('Processing request to fetch PM tasks for a specific site.');
+    logger.debug('Request parameters:', { siteUnid });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Fetching PM tasks for site.', { siteUnid });
+      const data: any = await this.pmSiteService.PmData(siteUnid);
+      logger.debug('Retrieved data for site:', { data });
+
+      if (!data || data.length === 0) {
+        logger.info('No tasks found for the provided site.', { siteUnid });
+        return res.status(204).send();
+      }
+
+      logger.info('Successfully fetched PM tasks for the site.', { siteUnid });
+      return res.send(data);
+    } catch (err) {
+      logger.error('Error while fetching PM tasks for the site.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  }
+}
+
+++++++++++++++++++++
+import { Injectable } from '@nestjs/common';
+import PmSiteRepo from './pmSite.repo';
+
+@Injectable()
+export class PmSiteService {
+    constructor(private PmSiteRepo: PmSiteRepo) {}
+
+   
+
+    async PmData(siteUnid) {
+        try {
+            const data = await this.PmSiteRepo.getPmBySite(siteUnid);
+
+            // Convert keys to lowercase and wrap data inside pmlist
+            const transformedData = data.map(item => {
+                const lowerCaseItem = {};
+                for (const key in item) {
+                    if (item.hasOwnProperty(key)) {
+                        lowerCaseItem[key.toLowerCase()] = item[key];
+                    }
+                }
+                return lowerCaseItem;
+            });
+
+            return { pmlist: transformedData };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
++++++++++++++++
+import { Injectable } from '@nestjs/common';
+import  {Oracle}  from '../common/database/oracle';
+import { queries } from './pmSite.qFactory';
+import  {reformatDates} from '../common/utils/common_util';
+
+
+@Injectable()
+export default class PmSiteRepo {
+  constructor(private oraUtil: Oracle) {}
+
+  async getPmBySite(siteUnid){
+    try{
+    const query = queries.getPmBySite;
+    const qParams=[siteUnid];
+    let data: any = await this.oraUtil.executeQuery(query, qParams);
+      // data = data.rows;
+
+      data = data.rows.map((item) => ({
+        ...item,
+        STARTDATE: item["STARTDATE"]
+          ? reformatDates(item["STARTDATE"])
+              :null,
+STOPDATE: item["STOPDATE"]
+          ? reformatDates(item["STOPDATE"])
+              :null,NUMTASKS:item.NUMTASKS==null?0:item.NUMTASKS,NUMTASKSDONE:item.NUMTASKSDONE==null?0:item.NUMTASKSDONE
+      }));
+      
+      
+      return data;
+    } catch (error) {
+      throw error;
+    }
+}
+}
+
++++++++++++
+export const queries = {
+  getPmBySite: `SELECT 
+    pmd_widget_pm_details.LIST_NAME AS listname, 
+    pmd_widget_pm_details.FREQUENCY AS frequency,
+    pmd_widget_pm_details.SWITCH_NAME AS switch,  
+    pmd_widget_pm_details.SITE_NAME AS site_name, 
+    pmd_widget_pm_details.SITE_UNID AS site_unid, 
+    pmd_widget_pm_details.NUM_OF_TASKS AS numtasks, 
+    pmd_widget_pm_details.NUM_OF_TASKS_DONE AS numtasksdone, 
+     to_char (pmd_widget_pm_details.START_DATE) AS startdate, 
+    to_char (pmd_widget_pm_details.END_DATE) AS stopdate, 
+    pmd_widget_pm_details.PM_UNID AS pm_unid, 
+    pmd_widget_pm_details.PMD_WIDGET_ID AS pmd_widget_id, 
+    pmd_widget.STATUS AS pmd_widget_status
+FROM 
+    pmd_widget_pm_details
+LEFT JOIN 
+    pmd_widget 
+ON 
+    pmd_widget_pm_details.PMD_WIDGET_ID = pmd_widget.PMD_WIDGET_ID
+     where pmd_widget_pm_details.site_unid =:siteUnid `,
+};
