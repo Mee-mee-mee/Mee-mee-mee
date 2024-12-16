@@ -484,3 +484,146 @@ describe('PmSiteRepo', () => {
     }
   });
 });
+&&&&&&&&&&&&&&&&&&&&&&&
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSiteController } from './pmSite.controller';
+import { PmSiteService } from './pmSite.service';
+import { Oracle } from '../common/database/oracle';
+import { Response } from 'express';
+import { Logger } from '../common/logger/logger';
+
+// Mocking dependencies
+jest.mock('./pmSite.service');
+jest.mock('../common/logger/logger');
+
+describe('PmSiteController', () => {
+  let controller: PmSiteController;
+  let service: PmSiteService;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmSiteController],
+      providers: [PmSiteService, Oracle],
+    }).compile();
+
+    controller = module.get<PmSiteController>(PmSiteController);
+    service = module.get<PmSiteService>(PmSiteService);
+    res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should call PmData and return data when PM tasks exist', async () => {
+    const mockData = {
+      pmlist: [
+        {
+          listname: 'Task 1',
+          frequency: 'Monthly',
+          switch: 'Switch A',
+          site_name: 'Site A',
+          site_unid: '123',
+          numtasks: 5,
+          numtasksdone: 3,
+          startdate: '2021-01-01',
+          stopdate: '2021-01-31',
+          pm_unid: '456',
+          pmd_widget_id: '789',
+          pmd_widget_status: 'Active',
+        },
+      ],
+    };
+
+    jest.spyOn(service, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getPmBySite('123', { headers: {} } as any, res);
+
+    expect(service.PmData).toHaveBeenCalledWith('123');
+    expect(res.send).toHaveBeenCalledWith(mockData);
+  });
+
+  it('should return 204 if no data is found', async () => {
+    jest.spyOn(service, 'PmData').mockResolvedValue({ pmlist: [] });
+
+    await controller.getPmBySite('123', { headers: {} } as any, res);
+
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.send).toHaveBeenCalled();
+  });
+
+  it('should return 500 if the service throws an error', async () => {
+    const error = new Error('Service Error');
+    jest.spyOn(service, 'PmData').mockRejectedValue(error);
+
+    await controller.getPmBySite('123', { headers: {} } as any, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.send).toHaveBeenCalledWith({ message: 'Internal server error', error: error.message });
+  });
+
+  it('should log the request headers', async () => {
+    const mockData = {
+      pmlist: [
+        {
+          listname: 'Task 1',
+          frequency: 'Monthly',
+          switch: 'Switch A',
+          site_name: 'Site A',
+          site_unid: '123',
+          numtasks: 5,
+          numtasksdone: 3,
+          startdate: '2021-01-01',
+          stopdate: '2021-01-31',
+          pm_unid: '456',
+          pmd_widget_id: '789',
+          pmd_widget_status: 'Active',
+        },
+      ],
+    };
+
+    // Mock logger
+    const logInfoSpy = jest.spyOn(Logger.prototype, 'info').mockImplementation();
+    const logDebugSpy = jest.spyOn(Logger.prototype, 'debug').mockImplementation();
+
+    jest.spyOn(service, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getPmBySite('123', { headers: { 'x-test-header': 'test' } } as any, res);
+
+    expect(logInfoSpy).toHaveBeenCalledWith('Processing request to fetch PM tasks for a specific site.');
+    expect(logDebugSpy).toHaveBeenCalledWith('Request parameters:', { siteUnid: '123' });
+    expect(logDebugSpy).toHaveBeenCalledWith('Request headers:', { headers: { 'x-test-header': 'test' } });
+  });
+
+  it('should return the correct response format', async () => {
+    const mockData = {
+      pmlist: [
+        {
+          listname: 'Task 1',
+          frequency: 'Monthly',
+          switch: 'Switch A',
+          site_name: 'Site A',
+          site_unid: '123',
+          numtasks: 5,
+          numtasksdone: 3,
+          startdate: '2021-01-01',
+          stopdate: '2021-01-31',
+          pm_unid: '456',
+          pmd_widget_id: '789',
+          pmd_widget_status: 'Active',
+        },
+      ],
+    };
+
+    jest.spyOn(service, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getPmBySite('123', { headers: {} } as any, res);
+
+    expect(res.send).toHaveBeenCalledWith(mockData);
+    expect(res.send).toHaveBeenCalledTimes(1);
+  });
+});
