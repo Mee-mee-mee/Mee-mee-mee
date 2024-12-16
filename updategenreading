@@ -483,3 +483,63 @@ describe('UpdateGenReadingRepo', () => {
     }
   });
 });
+
+88888888888888888888888888
+
+ FAIL  updateGenReading/updategenreading.repo.spec.ts
+  ● UpdateGenReadingRepo › should update genreading and return affected rows
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "UPDATE opspm.pm_location_task·
+                       SET SPECIFIC_DATA_VALUE = :SPECIFIC_DATA_VALUE,·
+                       META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),·
+                       META_LAST_UPDATED_BY = :META_CREATED_BY·
+                       WHERE PM_HEADER_ID = :pm_unid", Any<Array>
+    Received: "UPDATE opspm.pm_location_task·
+        SET SPECIFIC_DATA_VALUE = :SPECIFIC_DATA_VALUE,
+        META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+        META_LAST_UPDATED_BY = :META_CREATED_BY
+        WHERE PM_HEADER_ID = :pm_unid", ["{}", "user1", 123]
+
+    Number of calls: 1
+
+      38 |
+      39 |     expect(result).toEqual(1);
+    > 40 |     expect(oraUtil.executeQuery).toHaveBeenCalledWith(query, expect.any(Array));
+         |                                  ^
+      41 |   });
+      42 |
+      43 |   it('should throw an error if the database query fails', async () => {
+
+      at Object.<anonymous> (updateGenReading/updategenreading.repo.spec.ts:40:34)
+
+ FAIL  updateGenReading/updategenreading.service.spec.ts
+  ● UpdateGenreadingService › should call UpdateGenReadingRepo and return success message
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 7
+
+      Object {
+    -   "data": Object {},
+    +   "data": Object {
+    +     "pm_unid": 123,
+    +     "readings": Array [
+    +       Object {},
+    +     ],
+    +     "userid": "user1",
+    +   },
+        "message": "Readings added/updated successfully",
+      }
+
+      30 |     const result = await updateGenreadingService.updateDetails({ body: { readings: [{}], userid: 'user1', pm_unid: 123 } });
+      31 |
+    > 32 |     expect(result).toEqual(mockData);
+         |                    ^
+      33 |     expect(updateGenReadingRepo.updategenreading).toHaveBeenCalled();
+      34 |   });
+      35 |
+
+      at Object.<anonymous> (updateGenReading/updategenreading.service.spec.ts:32:20)
