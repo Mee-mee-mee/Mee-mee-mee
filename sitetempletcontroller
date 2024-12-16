@@ -63,160 +63,44 @@ export class PmSiteTemplateController {
   }
 }
 
-++++++++++++++
-import { Test, TestingModule } from '@nestjs/testing';
-import { PmSiteTemplateController } from './pmSiteTemplate.controller';
-import { PmSiteTemplateService } from './pmSiteTemplate.service';
-import { Response } from 'express';
-import { Logger } from '@nestjs/common';
++++++++++++++++
+import { Injectable } from "@nestjs/common";
+import { PmSiteTemplateRepository}  from "./pmSiteTemplate.repo";
+import logger from "../common/logger/logger";
 
-jest.mock('./pmSiteTemplate.service');
-jest.mock('../common/logger/logger');
+@Injectable()
+export class PmSiteTemplateService {
+  constructor(private pmSiteTemplateRepo: PmSiteTemplateRepository ) {}
+  async getPmTemplates(siteUnId:string){
+    
+    try{
+      const result = await this.pmSiteTemplateRepo.testFunc(siteUnId);
+      return result;
+    }catch(err){
+      logger.error("Unable to fetch templates",err)
+      throw new Error('Service Error: Unable to fetch template')
+    };
+  };
+}
+====
+import { Injectable, Logger } from "@nestjs/common";
+import {Oracle}  from "../common/database/oracle";
+import { queries} from "./pmSiteTemplate.qfactory";
 
-describe('PmSiteTemplateController', () => {
-  let controller: PmSiteTemplateController;
-  let service: PmSiteTemplateService;
-  let res: Response;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [PmSiteTemplateController],
-      providers: [PmSiteTemplateService],
-    }).compile();
-
-    controller = module.get<PmSiteTemplateController>(PmSiteTemplateController);
-    service = module.get<PmSiteTemplateService>(PmSiteTemplateService);
-    res = {
-      json: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-    } as any;
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-
-  describe('getPmTemplateBySite', () => {
-    it('should return PM templates when data is found', async () => {
-      const siteUnId = 'site123';
-      const mockResult = {
-        rows: [
-          {
-            TEMPLATE_NAME: 'Template1',
-            LIST_TEMPLATE_ID: '1',
-            TEMPLATE_DESC: 'Description 1',
-            IS_DISABLED: false,
-            FREQUENCY_NAME: 'Daily',
-          },
-          {
-            TEMPLATE_NAME: 'Template2',
-            LIST_TEMPLATE_ID: '2',
-            TEMPLATE_DESC: 'Description 2',
-            IS_DISABLED: true,
-            FREQUENCY_NAME: 'Weekly',
-          },
-        ],
-      };
-
-      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(mockResult);
-
-      await controller.getPmTemplateBySite(siteUnId, null, res);
-
-      expect(service.getPmTemplates).toHaveBeenCalledWith(siteUnId);
-      expect(res.json).toHaveBeenCalledWith({
-        siteUnId: siteUnId,
-        templates: [
-          {
-            name: 'Template1',
-            listTemplateId: '1',
-            description: 'Description 1',
-            isDisabled: false,
-            frequency: 'Daily',
-          },
-          {
-            name: 'Template2',
-            listTemplateId: '2',
-            description: 'Description 2',
-            isDisabled: true,
-            frequency: 'Weekly',
-          },
-        ],
-      });
-    });
-
-    it('should return empty array when no templates are found', async () => {
-      const siteUnId = 'site123';
-      const mockResult = { rows: [] };
-
-      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(mockResult);
-
-      await controller.getPmTemplateBySite(siteUnId, null, res);
-
-      expect(service.getPmTemplates).toHaveBeenCalledWith(siteUnId);
-      expect(res.json).toHaveBeenCalledWith({
-        siteUnId: siteUnId,
-        templates: [],
-      });
-    });
-
-    it('should handle errors gracefully and return 500 status', async () => {
-      const siteUnId = 'site123';
-      const errorMessage = 'Database error';
-
-      jest.spyOn(service, 'getPmTemplates').mockRejectedValue(new Error(errorMessage));
-
-      await controller.getPmTemplateBySite(siteUnId, null, res);
-
-      expect(service.getPmTemplates).toHaveBeenCalledWith(siteUnId);
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: 'Internal server error',
-        error: errorMessage,
-      });
-    });
-
-    it('should log appropriate messages during execution', async () => {
-      const siteUnId = 'site123';
-      const mockResult = {
-        rows: [
-          {
-            TEMPLATE_NAME: 'Template1',
-            LIST_TEMPLATE_ID: '1',
-            TEMPLATE_DESC: 'Description 1',
-            IS_DISABLED: false,
-            FREQUENCY_NAME: 'Daily',
-          },
-        ],
-      };
-
-      const infoSpy = jest.spyOn(Logger.prototype, 'log');
-      const debugSpy = jest.spyOn(Logger.prototype, 'debug');
-      const errorSpy = jest.spyOn(Logger.prototype, 'error');
-
-      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(mockResult);
-
-      await controller.getPmTemplateBySite(siteUnId, null, res);
-
-      expect(infoSpy).toHaveBeenCalledWith('Processing request to fetch PM templates for a specific site.');
-      expect(debugSpy).toHaveBeenCalledWith('Request parameters:', { siteUnId });
-      expect(debugSpy).toHaveBeenCalledWith('Request headers:', { headers: undefined }); // As headers are undefined in this case
-      expect(infoSpy).toHaveBeenCalledWith('Fetching PM templates for site.', { siteUnId });
-      expect(debugSpy).toHaveBeenCalledWith('Raw result from service:', { result: mockResult });
-      expect(infoSpy).toHaveBeenCalledWith('PM templates found for the site.', { siteUnId, templatesCount: 1 });
-    });
-
-    it('should return empty response if result is null or undefined', async () => {
-      const siteUnId = 'site123';
-      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(null);
-
-      await controller.getPmTemplateBySite(siteUnId, null, res);
-
-      expect(service.getPmTemplates).toHaveBeenCalledWith(siteUnId);
-      expect(res.json).toHaveBeenCalledWith({
-        siteUnId: siteUnId,
-        templates: [],
-      });
-    });
-  });
-});
-
+import logger from '../common/logger/logger';
+//let oracleobject = new Oracle();
+@Injectable()
+export class PmSiteTemplateRepository {
+  constructor(private connection: Oracle) {}
+  async testFunc(siteUnId){
+    try{
+    let templatesQuery=queries.getSitePmTemplates;
+    const params = [siteUnId]
+    let result = await this.connection.executeQuery(templatesQuery,params);
+    return result;
+    }catch(err){
+      logger.error("No templates found",err)
+      throw err;
+    }
+  }
+}
