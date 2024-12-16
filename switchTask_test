@@ -137,3 +137,231 @@ export const queries = {
         AND PMD_WIDGET_PM_DETAILS.END_DATE > sysdate)
     WHERE row_num = 1`,
 };
+""""""""""""""""""""
+import { Test, TestingModule } from '@nestjs/testing';
+import { switchTaskController } from './switchTask.controller';
+import { switchTaskService } from './switchTask.service';
+import { Oracle } from '../common/database/oracle';
+import { Response } from 'express';
+import { Logger } from '../common/logger/logger';
+
+// Mocking dependencies
+jest.mock('./switchTask.service');
+jest.mock('../common/logger/logger');
+
+describe('switchTaskController', () => {
+  let controller: switchTaskController;
+  let service: switchTaskService;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [switchTaskController],
+      providers: [switchTaskService, Oracle],
+    }).compile();
+
+    controller = module.get<switchTaskController>(switchTaskController);
+    service = module.get<switchTaskService>(switchTaskService);
+    res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should call PmData and return data when PM tasks exist', async () => {
+    const mockData = {
+      pmlist: [
+        {
+          listname: 'Task 1',
+          frequency: 'Monthly',
+          switch: 'Switch A',
+          switch_unid: '123',
+          site_unid: '456',
+          numtasks: 5,
+          numtasksdone: 3,
+          startdate: '2021-01-01',
+          stopdate: '2021-01-31',
+          pm_unid: '789',
+          pmd_widget_id: '101112',
+        },
+      ],
+    };
+
+    jest.spyOn(service, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getTasksByPm('123', { headers: {} } as any, res);
+
+    expect(service.PmData).toHaveBeenCalledWith('123');
+    expect(res.send).toHaveBeenCalledWith(mockData);
+  });
+
+  it('should return 200 with message when no records are found', async () => {
+    jest.spyOn(service, 'PmData').mockResolvedValue({ pmlist: [] });
+
+    await controller.getTasksByPm('123', { headers: {} } as any, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith('No records found');
+  });
+
+  it('should return 500 if service throws an error', async () => {
+    const error = new Error('Service Error');
+    jest.spyOn(service, 'PmData').mockRejectedValue(error);
+
+    await controller.getTasksByPm('123', { headers: {} } as any, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.send).toHaveBeenCalledWith({ message: 'Internal server error', error: error.message });
+  });
+
+  it('should log the request headers', async () => {
+    const mockData = {
+      pmlist: [
+        {
+          listname: 'Task 1',
+          frequency: 'Monthly',
+          switch: 'Switch A',
+          switch_unid: '123',
+          site_unid: '456',
+          numtasks: 5,
+          numtasksdone: 3,
+          startdate: '2021-01-01',
+          stopdate: '2021-01-31',
+          pm_unid: '789',
+          pmd_widget_id: '101112',
+        },
+      ],
+    };
+
+    // Mock logger
+    const logInfoSpy = jest.spyOn(Logger.prototype, 'info').mockImplementation();
+    const logDebugSpy = jest.spyOn(Logger.prototype, 'debug').mockImplementation();
+
+    jest.spyOn(service, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getTasksByPm('123', { headers: { 'x-test-header': 'test' } } as any, res);
+
+    expect(logInfoSpy).toHaveBeenCalledWith('Processing request to fetch tasks for PM switch.');
+    expect(logDebugSpy).toHaveBeenCalledWith('Request parameters:', { switchUnid: '123' });
+    expect(logDebugSpy).toHaveBeenCalledWith('Request headers:', { headers: { 'x-test-header': 'test' } });
+  });
+});
+++++++++++++++
+import { Test, TestingModule } from '@nestjs/testing';
+import { switchTaskService } from './switchTask.service';
+import SwitchTaskRepo from './switchTask.repo';
+
+jest.mock('./switchTask.repo');
+
+describe('switchTaskService', () => {
+  let service: switchTaskService;
+  let repo: SwitchTaskRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [switchTaskService, SwitchTaskRepo],
+    }).compile();
+
+    service = module.get<switchTaskService>(switchTaskService);
+    repo = module.get<SwitchTaskRepo>(SwitchTaskRepo);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should transform the data correctly', async () => {
+    const mockData = [
+      {
+        LISTNAME: 'Task 1',
+        FREQUENCY: 'Monthly',
+        SWITCH: 'Switch A',
+        SWITCH_UNID: '123',
+        SITE_UNID: '456',
+        NUMTASKS: 5,
+        NUMTASKSDONE: 3,
+        STARTDATE: '2021-01-01',
+        STOPDATE: '2021-01-31',
+        PM_UNID: '789',
+        PMD_WIDGET_ID: '101112',
+      },
+    ];
+
+    jest.spyOn(repo, 'getPmBySwitch').mockResolvedValue(mockData);
+
+    const result = await service.PmData('123');
+
+    expect(result.pmlist[0].listname).toBe('task 1');
+    expect(result.pmlist[0].frequency).toBe('monthly');
+  });
+
+  it('should throw error if repo fails', async () => {
+    const error = new Error('Repo Error');
+    jest.spyOn(repo, 'getPmBySwitch').mockRejectedValue(error);
+
+    await expect(service.PmData('123')).rejects.toThrow('Repo Error');
+  });
+});
++++++++++
+import { Test, TestingModule } from '@nestjs/testing';
+import SwitchTaskRepo from './switchTask.repo';
+import { Oracle } from '../common/database/oracle';
+import { reformatDates } from 'src/common/utils/common_util';
+
+jest.mock('../common/database/oracle');
+jest.mock('src/common/utils/common_util');
+
+describe('SwitchTaskRepo', () => {
+  let repo: SwitchTaskRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [SwitchTaskRepo, Oracle],
+    }).compile();
+
+    repo = module.get<SwitchTaskRepo>(SwitchTaskRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
+  });
+
+  it('should return transformed data', async () => {
+    const mockData = {
+      rows: [
+        {
+          LISTNAME: 'Task 1',
+          FREQUENCY: 'Monthly',
+          SWITCH: 'Switch A',
+          SWITCH_UNID: '123',
+          SITE_UNID: '456',
+          NUMTASKS: 5,
+          NUMTASKSDONE: 3,
+          STARTDATE: '2021-01-01',
+          STOPDATE: '2021-01-31',
+          PM_UNID: '789',
+          PMD_WIDGET_ID: '101112',
+        },
+      ],
+    };
+
+    jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(mockData);
+    jest.spyOn(reformatDates, 'reformatDates').mockReturnValue('2021-01-01');
+
+    const result = await repo.getPmBySwitch('123');
+    expect(result[0].STARTDATE).toBe('2021-01-01');
+  });
+
+  it('should throw error if executeQuery fails', async () => {
+    const error = new Error('Database Error');
+    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(error);
+
+    await expect(repo.getPmBySwitch('123')).rejects.toThrow('Database Error');
+  });
+});
