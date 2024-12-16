@@ -269,3 +269,55 @@ describe('GenreadingRepo', () => {
   });
 });
 ___________
+
+ GenReading/genreading.controller.spec.ts (8.141 s)
+  ● GenReadingController › should log information during request processing
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "Processing request for GenReading."
+
+    Number of calls: 0
+
+      71 |     await controller.getGenReading(req, res);
+      72 |
+    > 73 |     expect(logInfo).toHaveBeenCalledWith('Processing request for GenReading.');
+         |                     ^
+      74 |     expect(logInfo).toHaveBeenCalledWith('Starting data retrieval from genreadingService.');
+      75 |     expect(logInfo).toHaveBeenCalledWith('Data retrieval successful.', { retrievedDataSize: 1 });
+      76 |     expect(logError).not.toHaveBeenCalled();
+
+      at Object.<anonymous> (GenReading/genreading.controller.spec.ts:73:21)
+
+  ● GenReadingController › should log error details if GenData fails
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "An error occurred during data retrieval.", {"errorMessage": "Internal error", "errorStack": "Error: Internal error    
+        at Object.<anonymous> (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\src\\GenReading\\genreading.controller.spec.ts:80:19)
+        at Promise.then.completed (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\utils.js:298:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\utils.js:231:10)
+        at _callCircusTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:316:40)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at _runTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:252:3)
+        at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:126:9)
+        at _runTestsForDescribeBlock (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:121:9)
+        at run (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\run.js:71:3)
+        at runAndTransformResultsToJestFormat (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)
+        at jestAdapter (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)
+        at runTestInternal (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\runTest.js:367:16)
+        at runTest (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\runTest.js:444:34)
+        at Object.worker (C:\\Users\\bhagamu\\Documents\\project\\iop-pm-service\\node_modules\\jest-runner\\build\\testWorker.js:106:12)"}
+
+    Number of calls: 0
+
+      85 |     await controller.getGenReading(req, res);
+      86 |
+    > 87 |     expect(logError).toHaveBeenCalledWith('An error occurred during data retrieval.', {
+         |                      ^
+      88 |       errorMessage: error.message,
+      89 |       errorStack: error.stack,
+      90 |     });
+
+      at Object.<anonymous> (GenReading/genreading.controller.spec.ts:87:22)
