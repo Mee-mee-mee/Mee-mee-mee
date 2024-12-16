@@ -1,0 +1,82 @@
+import { Controller, Param, Get, Req, Res } from '@nestjs/common';
+import { GenreadingService } from './genreading.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+const config = require('config');
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class GenReadingController {
+  constructor(private readonly genreadingService: GenreadingService) {}
+
+  // This will give Genreading associated values
+  @Get('/pm/genreading/prepops')
+  async getGenReading(@Req() req: Request, @Res() res: Response) {
+    logger.info('Processing request for GenReading.');
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Starting data retrieval from genreadingService.');
+      const data: any = await this.genreadingService.GenData();
+      logger.debug('Raw data retrieved from service:', { data });
+      logger.info('Data retrieval successful.', { retrievedDataSize: data?.length || 0 });
+      return res.send(data);
+    } catch (err) {
+      logger.error('An error occurred during data retrieval.', { errorMessage: err.message, errorStack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal Server Error', error: err.message });
+    }
+  }
+}
+
+++++++++++++++++++
+
+import { Injectable } from '@nestjs/common';
+import GenreadingRepo from './genreading.repo';
+
+@Injectable()
+export class GenreadingService {
+  constructor(private GenreadingRepo: GenreadingRepo) {}
+  async GenData() {
+      try {
+        const data = await this.GenreadingRepo.getgenreading();
+  
+        return data;
+      } catch (error) {
+        throw error;
+      }
+}
+}
++++++++++++++
+import { Injectable } from '@nestjs/common';
+import  {Oracle}  from '../common/database/oracle';
+const config = require('config');
+
+@Injectable()
+export default class GenreadingRepo {
+  constructor(private oraUtil: Oracle) {}
+
+  async getgenreading(){
+    try{
+    let data: any = config.genData;
+      return data;
+    } catch (error) {
+      throw error;
+    }
+}
+}
+++++++++
+import { Module } from '@nestjs/common';
+import { OracleModule } from 'src/common/database/oracle.module';
+import { GenReadingController } from './genreading.controller';
+import { GenreadingService } from './genreading.service';
+import GenreadingRepo from './genreading.repo';
+
+@Module({
+  imports: [OracleModule],
+  controllers: [GenReadingController],
+  providers: [GenreadingService,GenreadingRepo],
+})
+export class GenReadingModule {}
