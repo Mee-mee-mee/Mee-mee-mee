@@ -133,3 +133,262 @@ ON
     pmd_widget_pm_details.PMD_WIDGET_ID = pmd_widget.PMD_WIDGET_ID
      where pmd_widget_pm_details.site_unid =:siteUnid `,
 };
++++++++++++++++++++++++++++++++
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSiteController } from './pmSite.controller';
+import { PmSiteService } from './pmSite.service';
+import { Response, Request } from 'express';
+import { Logger } from '@nestjs/common';
+
+// Mock the PmSiteService
+jest.mock('./pmSite.service');
+
+describe('PmSiteController', () => {
+  let controller: PmSiteController;
+  let pmSiteService: PmSiteService;
+  let req: Request;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmSiteController],
+      providers: [PmSiteService],
+    }).compile();
+
+    controller = module.get<PmSiteController>(PmSiteController);
+    pmSiteService = module.get<PmSiteService>(PmSiteService);
+
+    // Mocking the request and response objects
+    req = {
+      params: { siteUnid: '123' },
+      headers: {},
+    } as unknown as Request;
+    res = {
+      send: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should return PM tasks for a site', async () => {
+    const mockData = { pmlist: [{ listname: 'Task 1' }] };
+    jest.spyOn(pmSiteService, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getPmBySite('123', req, res);
+
+    expect(res.send).toHaveBeenCalledWith(mockData);
+  });
+
+  it('should return 204 if no tasks are found for the site', async () => {
+    const mockData = { pmlist: [] };
+    jest.spyOn(pmSiteService, 'PmData').mockResolvedValue(mockData);
+
+    await controller.getPmBySite('123', req, res);
+
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.send).toHaveBeenCalled();
+  });
+
+  it('should handle errors and return 500 if PmData fails', async () => {
+    const error = new Error('Service error');
+    jest.spyOn(pmSiteService, 'PmData').mockRejectedValue(error);
+
+    await controller.getPmBySite('123', req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Internal server error',
+      error: error.message,
+    });
+  });
+
+  it('should log information during request processing', async () => {
+    const mockData = { pmlist: [{ listname: 'Task 1' }] };
+    jest.spyOn(pmSiteService, 'PmData').mockResolvedValue(mockData);
+
+    const logInfo = jest.spyOn(Logger, 'log');
+    const logError = jest.spyOn(Logger, 'error');
+
+    await controller.getPmBySite('123', req, res);
+
+    expect(logInfo).toHaveBeenCalledWith('Processing request to fetch PM tasks for a specific site.');
+    expect(logInfo).toHaveBeenCalledWith('Fetching PM tasks for site.', { siteUnid: '123' });
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it('should log error details if PmData fails', async () => {
+    const error = new Error('Internal server error');
+    jest.spyOn(pmSiteService, 'PmData').mockRejectedValue(error);
+
+    const logError = jest.spyOn(Logger, 'error');
+
+    await controller.getPmBySite('123', req, res);
+
+    expect(logError).toHaveBeenCalledWith('Error while fetching PM tasks for the site.', {
+      errorMessage: error.message,
+      stack: error.stack,
+    });
+  });
+});
+_____________
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSiteService } from './pmSite.service';
+import { PmSiteRepo } from './pmSite.repo';
+
+// Mock the repository
+jest.mock('./pmSite.repo');
+
+describe('PmSiteService', () => {
+  let pmSiteService: PmSiteService;
+  let pmSiteRepo: PmSiteRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [PmSiteService, PmSiteRepo],
+    }).compile();
+
+    pmSiteService = module.get<PmSiteService>(PmSiteService);
+    pmSiteRepo = module.get<PmSiteRepo>(PmSiteRepo);
+  });
+
+  it('should be defined', () => {
+    expect(pmSiteService).toBeDefined();
+  });
+
+  it('should call PmSiteRepo and return transformed data', async () => {
+    const mockData = [
+      {
+        LIST_NAME: 'Task 1',
+        FREQUENCY: 'Monthly',
+        SWITCH_NAME: 'Switch A',
+        SITE_NAME: 'Site A',
+        SITE_UNID: '123',
+        NUM_OF_TASKS: 5,
+        NUM_OF_TASKS_DONE: 3,
+        START_DATE: '2021-01-01',
+        END_DATE: '2021-01-31',
+        PM_UNID: '456',
+        PMD_WIDGET_ID: '789',
+        STATUS: 'Active',
+      },
+    ];
+
+    jest.spyOn(pmSiteRepo, 'getPmBySite').mockResolvedValue(mockData);
+
+    const result = await pmSiteService.PmData('123');
+
+    expect(result).toEqual({
+      pmlist: [
+        {
+          listname: 'Task 1',
+          frequency: 'Monthly',
+          switch: 'Switch A',
+          site_name: 'Site A',
+          site_unid: '123',
+          numtasks: 5,
+          numtasksdone: 3,
+          startdate: '2021-01-01',
+          stopdate: '2021-01-31',
+          pm_unid: '456',
+          pmd_widget_id: '789',
+          pmd_widget_status: 'Active',
+        },
+      ],
+    });
+  });
+
+  it('should throw an error if PmSiteRepo fails', async () => {
+    const error = new Error('Repository error');
+    jest.spyOn(pmSiteRepo, 'getPmBySite').mockRejectedValue(error);
+
+    try {
+      await pmSiteService.PmData('123');
+    } catch (e) {
+      expect(e.message).toBe('Repository error');
+    }
+  });
+});
+__________
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSiteRepo } from './pmSite.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './pmSite.qFactory';
+import { reformatDates } from '../common/utils/common_util';
+
+// Mock the Oracle service
+jest.mock('../common/database/oracle');
+jest.mock('../common/utils/common_util');
+
+describe('PmSiteRepo', () => {
+  let pmSiteRepo: PmSiteRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [PmSiteRepo, Oracle],
+    }).compile();
+
+    pmSiteRepo = module.get<PmSiteRepo>(PmSiteRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(pmSiteRepo).toBeDefined();
+  });
+
+  it('should return data when getPmBySite is called', async () => {
+    const mockData = {
+      rows: [
+        {
+          LIST_NAME: 'Task 1',
+          FREQUENCY: 'Monthly',
+          SWITCH_NAME: 'Switch A',
+          SITE_NAME: 'Site A',
+          SITE_UNID: '123',
+          NUM_OF_TASKS: 5,
+          NUM_OF_TASKS_DONE: 3,
+          START_DATE: '2021-01-01',
+          END_DATE: '2021-01-31',
+          PM_UNID: '456',
+          PMD_WIDGET_ID: '789',
+          STATUS: 'Active',
+        },
+      ],
+    };
+
+    jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(mockData);
+    jest.spyOn(reformatDates, 'reformatDates').mockReturnValue('2021-01-01');
+
+    const result = await pmSiteRepo.getPmBySite('123');
+    expect(result).toEqual([
+      {
+        listname: 'Task 1',
+        frequency: 'Monthly',
+        switch: 'Switch A',
+        site_name: 'Site A',
+        site_unid: '123',
+        numtasks: 5,
+        numtasksdone: 3,
+        startdate: '2021-01-01',
+        stopdate: '2021-01-31',
+        pm_unid: '456',
+        pmd_widget_id: '789',
+        pmd_widget_status: 'Active',
+      },
+    ]);
+  });
+
+  it('should throw an error if there is a problem retrieving data', async () => {
+    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(new Error('Database error'));
+
+    try {
+      await pmSiteRepo.getPmBySite('123');
+    } catch (error) {
+      expect(error.message).toBe('Database error');
+    }
+  });
+});
