@@ -1,0 +1,139 @@
+import { Controller, Param, Get, Req, Res } from '@nestjs/common';
+import { switchTaskService } from './switchTask.service';
+import { ApiTags } from '@nestjs/swagger';
+import logger from '../common/logger/logger';
+import { Request, Response } from 'express';
+
+const config = require('config');
+
+@Controller('ioppm')
+@ApiTags('Default')
+export class switchTaskController {
+  constructor(private readonly SwitchTaskService: switchTaskService) {}
+
+  // This will return the tasks associated with a PM for a switch
+  @Get('/switch/:switchUnid/pm')
+  async getTasksByPm(
+    @Param('switchUnid') switchUnid: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    logger.info('Processing request to fetch tasks for PM switch.');
+    logger.debug('Request parameters:', { switchUnid });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Fetching PM tasks for switch.', { switchUnid });
+      const data: any = await this.SwitchTaskService.PmData(switchUnid);
+      logger.debug('Retrieved data from service:', { data });
+
+      if (data.length === 0) {
+        logger.info('No records found for the switch.', { switchUnid });
+        return res.status(200).send('No records found');
+      } else {
+        logger.info('Successfully retrieved tasks for PM switch.', { switchUnid, recordsCount: data.length });
+        return res.send(data);
+      }
+    } catch (err) {
+      logger.error('Error while fetching tasks for PM switch.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  }
+}
++++++++
+
+import { Injectable } from '@nestjs/common';
+import SwitchTaskRepo from './switchTask.repo';
+
+@Injectable()
+export class switchTaskService {
+    constructor(private SwitchTaskRepo: SwitchTaskRepo) { }
+    async PmData(switchUnid) {
+        try {
+            const data = await this.SwitchTaskRepo.getPmBySwitch(switchUnid);
+            const transformedData = data.map(item => {
+                const lowerCaseItem = {};
+                for (const key in item) {
+                    if (item.hasOwnProperty(key)) {
+                        lowerCaseItem[key.toLowerCase()] = item[key];
+                    }
+                }
+                return lowerCaseItem;
+            });
+            return { pmlist: transformedData };
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+++++++
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './switchTask.qFactory';
+import { reformatDates } from 'src/common/utils/common_util';
+
+@Injectable()
+export default class SwitchTaskRepo {
+  constructor(private oraUtil: Oracle) { }
+
+  async getPmBySwitch(switchUnid) {
+    try {
+      const query = queries.getPmBySwitch;
+      const qParams = [switchUnid];
+      let data: any = await this.oraUtil.executeQuery(query, qParams);
+      data = data.rows;
+
+      for (let task of data) {
+        //changeing the date format as in DB 
+        task['STARTDATE'] = reformatDates(task['STARTDATE']);
+        task['STOPDATE'] = reformatDates(task['STOPDATE']);
+      }
+
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+}
+++++
+export const queries = {
+    getPmBySwitch: `
+    SELECT listname,frequency,switch,switch_unid,site_unid,numtasks,numtasksdone,startdate,stopdate,pm_unid,pmd_widget_id FROM (
+    SELECT
+        PMD_WIDGET_PM_DETAILS.LIST_NAME AS listname,
+        PMD_WIDGET_PM_DETAILS.FREQUENCY AS frequency,
+        PMD_WIDGET_PM_DETAILS.SWITCH_NAME AS switch,
+        PMD_WIDGET_PM_DETAILS.SWITCH_UNID AS switch_unid,
+        PMD_WIDGET_PM_DETAILS.SITE_UNID AS site_unid,
+        PMD_WIDGET_PM_DETAILS.NUM_OF_TASKS AS numtasks,
+        ( select count(*) FROM opspm.pm_location_task plt 
+          WHERE 
+          plt.SWITCH_UNID = PMD_WIDGET_PM_DETAILS.SWITCH_UNID AND
+          plt.PM_HEADER_ID = PMD_WIDGET_PM_DETAILS.PM_UNID
+          AND plt.status_id != 'I'
+          ) AS numtasksdone,
+        to_char(plt.PM_TASK_START_TIME) AS startdate,
+        to_char(plt.PM_TASK_STOP_TIME) AS stopdate,
+        PMD_WIDGET_PM_DETAILS.PM_UNID AS pm_unid,
+        PMD_WIDGET_PM_DETAILS.PMD_WIDGET_ID AS pmd_widget_id,
+        ROW_NUMBER() OVER (PARTITION BY PMD_WIDGET_PM_DETAILS.PM_UNID ORDER BY PMD_WIDGET_PM_DETAILS.PM_UNID) AS row_num
+    FROM
+        PMD_WIDGET_PM_DETAILS
+    LEFT JOIN
+        pmd_widget
+    ON
+        PMD_WIDGET_PM_DETAILS.PMD_WIDGET_ID = pmd_widget.PMD_WIDGET_ID
+        
+    LEFT JOIN 
+    opspm.pm_location_task plt 
+    ON 
+    plt.SWITCH_UNID = PMD_WIDGET_PM_DETAILS.SWITCH_UNID AND plt.PM_HEADER_ID = PMD_WIDGET_PM_DETAILS.PM_UNID
+        
+    WHERE
+        PMD_WIDGET_PM_DETAILS.switch_unid = :switchUnid
+        AND PMD_WIDGET_PM_DETAILS.LIST_NAME LIKE '%Switch%'
+        AND PMD_WIDGET_PM_DETAILS.SITE_UNID IS null
+        AND PMD_WIDGET_PM_DETAILS.END_DATE > sysdate)
+    WHERE row_num = 1`,
+};
