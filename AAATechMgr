@@ -1,395 +1,118 @@
-SELECT DISTINCT a.STATUS_ID
-FROM opspm.PM_TASK_AVAILABLE_STATUS_ITEM a
-JOIN OPSPM.PM_LOCATION_TASK b
-ON a.TASK_ID = b.TASK_ID
-WHERE b.PM_HEADER_ID = '59B52A661D399EE671317A3A7EEBDF51'
-order by a.STATUS_ID;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export const queries = {
-    getPmMgrSumm: `
-        SELECT 
-          plt.TECHNICIAN_ID AS techid,
-          pmd.NUM_OF_TASKS AS numtasks,
-          pmd.NUM_OF_TASKS_DONE AS numtasksdone,
-          plt.PM_TASK_STOP_TIME AS pm_task_stop_time,
-          CASE
-            WHEN :duein = '30' THEN SYSDATE + 30
-            WHEN :duein = '60' THEN SYSDATE + 60
-            WHEN :duein = '90' THEN SYSDATE + 90
-            WHEN :duein = '180' THEN SYSDATE + 180
-            WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY'), 'DD-MON-YYYY')
-          END AS dueDate,
-          CASE
-            WHEN plt.PM_TASK_STOP_TIME <= 
-                CASE
-                  WHEN :duein = '30' THEN SYSDATE + 30
-                  WHEN :duein = '60' THEN SYSDATE + 60
-                  WHEN :duein = '90' THEN SYSDATE + 90
-                  WHEN :duein = '180' THEN SYSDATE + 180
-                  WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY'), 'DD-MON-YYYY')
-                END
-            THEN :duein
-          END AS duein
-        FROM 
-          PMD_WIDGET_PM_DETAILS pmd
-        LEFT JOIN 
-          opspm.PM_LOCATION_TASK plt ON pmd.SITE_UNID = plt.SITE_UNID
-           LEFT JOIN
-        opsinv.SITE_DATA_NEW st ON st.META_UNIVERSALID=plt.SITE_UNID
-        WHERE 
-          plt.MANAGER_ID   = :mgrid
-        AND 
-          plt.PM_TASK_STOP_TIME <= 
-            CASE
-              WHEN :duein = '30' THEN SYSDATE + 30
-              WHEN :duein = '60' THEN SYSDATE + 60
-              WHEN :duein = '90' THEN SYSDATE + 90
-              WHEN :duein = '180' THEN SYSDATE + 180
-              WHEN :duein = 'eoy' THEN TO_DATE('31-DEC-' || TO_CHAR(SYSDATE, 'YYYY'), 'DD-MON-YYYY')
-            END`,
-};
-
-
-====================
-import { Controller, Param, Get, Query, Req, Res } from '@nestjs/common';
-import { PmMgrSummService } from './pmMgrSumm.service';
+import { Controller, Param, Put, Req, Res } from '@nestjs/common';
+import { UpdateSwitchTaskService } from './updateSwitchTask.service';
 import { ApiTags } from '@nestjs/swagger';
 import logger from '../common/logger/logger';
 import { Request, Response } from 'express';
 
+const config = require('config');
+
 @Controller('ioppm')
 @ApiTags('Default')
-export class PmMgrSummController {
-    constructor(private readonly pmMgrSummService: PmMgrSummService) { }
+export class updateSwitchTaskController {
+  constructor(private readonly UpdateSwitchTaskService: UpdateSwitchTaskService) {}
 
-    // Get PM Summary for Manager details
-    @Get('/mgr/:mgrId/pm/summary')
-    async getTasksByPm(
-        @Param('mgrId') mgrId: string,
-        @Query('duein') duein: string,
-        @Req() req: Request,
-        @Res() res: Response,
-    ) {
-        try {
-            const pmData = await this.pmMgrSummService.PmData(mgrId, duein);
-            if (pmData.taskcounts.length === 0) {
-                return res.status(204).send();
-            }
-            return res.json(pmData);
-        } catch (err) {
-            logger.error('Not able to get Summary of Manager for PM', err);
-            return res.status(500).json({ message: 'Internal server error', error: err });
-        }
+  @Put('/switch/update/pmtasks')
+  async updateSwitch(@Req() req: Request, @Res() res: Response) {
+    logger.info('Processing request to update switch PM tasks.');
+    logger.debug('Request body:', { body: req.body });
+    logger.debug('Request headers:', { headers: req.headers });
+
+    try {
+      logger.info('Updating switch PM task details.');
+      const data: any = await this.UpdateSwitchTaskService.updateDetails(req);
+      logger.debug('Update response:', { data });
+
+      logger.info('Successfully updated switch PM task details.');
+      return res.send(data);
+    } catch (err) {
+      logger.error('Error in updating Task Details.', { errorMessage: err.message, stack: err.stack });
+      logger.debug('Error details:', { error: err });
+      return res.status(500).json({ message: 'Internal server error', error: err.message });
     }
+  }
 }
-===============
+=========
 import { Injectable } from '@nestjs/common';
-import PmMgrRepo from './pmMgrSumm.repo';
+import UpdateSwitchTaskRepo from './updateSwitchTask.repo';
+
 
 @Injectable()
-export class PmMgrSummService {
-    constructor(private readonly pmMgrRepo: PmMgrRepo) { }
+export class UpdateSwitchTaskService {
 
-    async PmData(mgrid: string, duein: string) {
-        try {
-            const data = await this.pmMgrRepo.getPmMgrSumm(mgrid, duein);
-            const transformedData = data.map((site: any) => {
-                const totalTasks = site.numtasks || 0;
-                const doneTasks = site.numtasksdone || 0;
-                const perc = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 100;
-                const tasks = [
-                    {
-                        duein: site.duein,
-                        pm: {
-                            total: totalTasks,
-                            done: doneTasks,
-                            perc: perc,
-                        },
-                    },
-                ];
-                return {
-                    techid: site.techid,
-                    tasks: tasks,
-                };
-            });
-            console.log('before transformed data', transformedData);
-            return { taskcounts: transformedData };
-        } catch (error) {
-            throw error;
-        }
-    }
+  constructor(private UpdateSwitchTaskRepo: UpdateSwitchTaskRepo) {}
+  async updateDetails(req) {
+      try {
+        const data = await this.UpdateSwitchTaskRepo.updateswitchrepo(req);
+        const data_json= {"message": "PM tasks updated successfully","pm": req.body.pm}
+        return data_json;
+  
+      } catch (error) {
+        throw error;
+      }
 }
-
-
-================
-
-
+    }
+======
 import { Injectable } from '@nestjs/common';
-import { Oracle } from '../common/database/oracle';
-import { queries } from './pmMgrSumm.qfactory';
+import  {Oracle}  from '../common/database/oracle';
+import { queries } from './updateSwitchTask.qFactory';
 
 @Injectable()
-export default class PmMgrRepo {
-    constructor(private oraUtil: Oracle) { }
+export default class UpdateSwitchTaskRepo {
+  constructor(private oraUtil: Oracle) {}
 
-    async getPmMgrSumm(mgrid: string, duein: string) {
-        try {
-            const query = queries.getPmMgrSumm;
-            console.log('Due value', duein);
-            const qParams = {
-                mgrid: mgrid,
-                duein: duein,
-            };
-
-            let data: any = await this.oraUtil.executeQuery(query, qParams);
-
-            data = data.rows;
-            data = data.map((item) => {
-                const lowerCaseItem = {};
-                Object.keys(item).forEach((key) => {
-                    lowerCaseItem[key.toLowerCase()] = item[key];
-                });
-                return lowerCaseItem;
-            });
-
-            return data;
-        } catch (error) {
-            throw error;
-        }
+  async updateswitchrepo(req: any){
+    try{
+      const query1 = queries.updatetask;
+      const query2 = queries.updateWidgetDetails;
+      const pmtasks = req.body.pm.pmtasks;
+      const META_LAST_UPDATED_BY= req.body.pm.userid;
+      const switch_unid = req.body.pm.switch_unid;
+      const PM_UNID = req.body.pm.pm_unid;
+      let result;
+      
+      const taskstoupdate=pmtasks.filter(task => task.isStatusChanged===1||task.isCommentChanged===1||(typeof task['status_value']==="number"));
+  
+      for (let task of taskstoupdate) {
+       
+          let status=task['status'];
+          let task_unid = task['task_unid'];
+          let comments = task['comments'];
+          let specifictask_value=task['specifictask_value'];
+          const qParams1=[status,META_LAST_UPDATED_BY,comments, specifictask_value, META_LAST_UPDATED_BY,task_unid,switch_unid];
+          const data: any=await this.oraUtil.executeQuery(query1,qParams1);
+          result=data.rowsAffected;
+        
+      }
+      const qParams2 = [switch_unid, PM_UNID];
+      await this.oraUtil.executeQuery(query2, qParams2);
+      return result;
+    } catch (error) {
+      throw error;
     }
 }
-##########################
-import { Test, TestingModule } from '@nestjs/testing';
-import { PmMgrSummController } from './pmMgrSumm.controller';
-import { PmMgrSummService } from './pmMgrSumm.service';
-import { Request, Response } from 'express';
-
-describe('PmMgrSummController', () => {
-    let controller: PmMgrSummController;
-    let service: PmMgrSummService;
-
-    const mockService = {
-        PmData: jest.fn(),
-    };
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            controllers: [PmMgrSummController],
-            providers: [{ provide: PmMgrSummService, useValue: mockService }],
-        }).compile();
-
-        controller = module.get<PmMgrSummController>(PmMgrSummController);
-        service = module.get<PmMgrSummService>(PmMgrSummService);
-    });
-
-    it('should be defined', () => {
-        expect(controller).toBeDefined();
-    });
-
-    describe('getTasksByPm', () => {
-        it('should return task data', async () => {
-            const req = {} as Request;
-            const res = { json: jest.fn(), status: jest.fn().mockReturnThis() } as unknown as Response;
-            const mgrId = '123';
-            const duein = 'someDueIn';
-            const pmData = { taskcounts: [{ techid: 'tech1', tasks: [] }] };
-
-            mockService.PmData.mockResolvedValue(pmData);
-
-            await controller.getTasksByPm(mgrId, duein, req, res);
-
-            expect(res.json).toHaveBeenCalledWith(pmData);
-            expect(res.status).not.toHaveBeenCalledWith(204);
-        });
-
-        it('should return 204 if no task counts', async () => {
-            const req = {} as Request;
-            const res = { status: jest.fn().mockReturnThis(), send: jest.fn() } as unknown as Response;
-            const mgrId = '123';
-            const duein = 'someDueIn';
-            const pmData = { taskcounts: [] };
-
-            mockService.PmData.mockResolvedValue(pmData);
-
-            await controller.getTasksByPm(mgrId, duein, req, res);
-
-            expect(res.status).toHaveBeenCalledWith(204);
-            expect(res.send).toHaveBeenCalled();
-        });
-
-        it('should return 500 on error', async () => {
-            const req = {} as Request;
-            const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
-            const mgrId = '123';
-            const duein = 'someDueIn';
-
-            mockService.PmData.mockRejectedValue(new Error('Some error'));
-
-            await controller.getTasksByPm(mgrId, duein, req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error', error: expect.any(Error) });
-        });
-    });
-});
-============
-
-import { Test, TestingModule } from '@nestjs/testing';
-import { PmMgrSummService } from './pmMgrSumm.service';
-import PmMgrRepo from './pmMgrSumm.repo';
-
-describe('PmMgrSummService', () => {
-    let service: PmMgrSummService;
-    let repo: PmMgrRepo;
-
-    const mockRepo = {
-        getPmMgrSumm: jest.fn(),
-    };
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [{ provide: PmMgrSummRepo, useValue: mockRepo }],
-        }).compile();
-
-        service = module.get<PmMgrSummService>(PmMgrSummService);
-        repo = module.get<PmMgrRepo>(PmMgrRepo);
-    });
-
-    it('should be defined', () => {
-        expect(service).toBeDefined();
-    });
-
-    describe('PmData', () => {
-        it('should return transformed data', async () => {
-            const mgrid = '123';
-            const duein = 'someDueIn';
-            const mockData = [
-                { techid: 'tech1', numtasks: 10, numtasksdone: 5, duein: '2024-10-10' },
-            ];
-
-            mockRepo.getPmMgrSumm.mockResolvedValue(mockData);
-
-            const result = await service.PmData(mgrid, duein);
-
-            expect(result).toEqual({
-                taskcounts: [{
-                    techid: 'tech1',
-                    tasks: [{
-                        duein: '2024-10-10',
-                        pm: {
-                            total: 10,
-                            done: 5,
-                            perc: 50,
-                        },
-                    }],
-                }],
-            });
-        });
-
-        it('should handle empty data', async () => {
-            const mgrid = '123';
-            const duein = 'someDueIn';
-
-            mockRepo.getPmMgrSumm.mockResolvedValue([]);
-
-            const result = await service.PmData(mgrid, duein);
-
-            expect(result).toEqual({ taskcounts: [] });
-        });
-
-        it('should throw error if repo fails', async () => {
-            const mgrid = '123';
-            const duein = 'someDueIn';
-
-            mockRepo.getPmMgrSumm.mockRejectedValue(new Error('Some error'));
-
-            await expect(service.PmData(mgrid, duein)).rejects.toThrow('Some error');
-        });
-    });
-});
-=============
-import { Test, TestingModule } from '@nestjs/testing';
-import PmMgrRepo from './pmMgrSumm.repo';
-import { Oracle } from '../common/database/oracle';
-
-describe('PmMgrRepo', () => {
-    let repo: PmMgrRepo;
-    let oraUtil: Oracle;
-
-    const mockOracle = {
-        executeQuery: jest.fn(),
-    };
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [{ provide: Oracle, useValue: mockOracle }, PmMgrRepo],
-        }).compile();
-
-        repo = module.get<PmMgrRepo>(PmMgrRepo);
-        oraUtil = module.get<Oracle>(Oracle);
-    });
-
-    it('should be defined', () => {
-        expect(repo).toBeDefined();
-    });
-
-    describe('getPmMgrSumm', () => {
-        it('should return formatted data', async () => {
-            const mgrid = '123';
-            const duein = 'someDueIn';
-            const mockData = {
-                rows: [
-                    { TECHID: 'tech1', NUMTASKS: 10, NUMTASKSDONE: 5 },
-                ],
-            };
-
-            mockOracle.executeQuery.mockResolvedValue(mockData);
-
-            const result = await repo.getPmMgrSumm(mgrid, duein);
-
-            expect(result).toEqual([{ techid: 'tech1', numtasks: 10, numtasksdone: 5 }]);
-        });
-
-        it('should throw error if query fails', async () => {
-            const mgrid = '123';
-            const duein = 'someDueIn';
-
-            mockOracle.executeQuery.mockRejectedValue(new Error('Some error'));
-
-            await expect(repo.getPmMgrSumm(mgrid, duein)).rejects.toThrow('Some error');
-        });
-    });
-});
-
------------------------
-providers: [
-    PmMgrSummService,  // Ensure the service is provided correctly
-    {
-        provide: PmMgrRepo,  // Corrected from PmMgrSummRepo to PmMgrRepo
-        useValue: mockRepo,
-    },
-],
+}
+=======export const queries={
+        updatetask: `
+        UPDATE opspm.pm_location_task t
+        SET t.STATUS_ID = :STATUS,
+        t.META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp),
+        t.META_LAST_UPDATED_BY = :META_LAST_UPDATED_BY,
+        t.COMMENTS = :COMMENTS,
+        SPECIFIC_DATA_VALUE=:SPECIFIC_TASK_VALUE,
+        t.STATUSTIMESTAMP = sys_extract_utc(systimestamp),
+        t.STATUSIDSTAMP = :META_LAST_UPDATED_BY
+        WHERE META_UNIVERSAL_ID = :TASK_UNID 
+        AND SWITCH_UNID = :SWITCH_UNID`,
+        
+        updateWidgetDetails: `UPDATE pmd_widget_pm_details w
+        SET w.num_of_tasks_done = (
+          SELECT COUNT(*)
+          FROM opspm.pm_location_task t
+          WHERE 
+          t.PM_HEADER_ID = w.PM_UNID
+          AND t.STATUS_ID != 'I'
+        )
+           WHERE w.pm_unid IN (
+        SELECT PM_HEADER_ID FROM OPSPM.pm_location_task WHERE SWITCH_UNID = :SWITCH_UNID AND PM_HEADER_ID = :PM_UNID
+        )`
+}
