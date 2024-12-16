@@ -1,0 +1,72 @@
+import { Injectable } from '@nestjs/common';
+import { Oracle } from '../common/database/oracle';
+import { queries } from "./task.qFactory";
+import { reformatDates } from '../common/utils/common_util';
+
+@Injectable()
+export default class taskrepo {
+    constructor(private oraUtil: Oracle) { }
+
+    async pmSData(pmHeaderId) {
+        try {
+            // Fetch the pmtasks and header data
+            const query = queries.getTestById;
+            const qParams = [pmHeaderId];
+            let pmData: any = await this.oraUtil.executeQuery(query, qParams);
+            pmData = pmData.rows;
+
+            const query1 = queries.getestById;
+            let headerData1: any = await this.oraUtil.executeQuery(query1, qParams);
+
+
+            // For each task, fetch the availablestatuses
+            const statusQuery = queries.getTestbyId;
+            const statusParams = [pmHeaderId];
+            let statusData: any = await this.oraUtil.executeQuery(statusQuery, statusParams);
+            const statusArray = statusData.rows.map(row => row.STATUS_ID);
+            for (let task of pmData) {
+                // reformatting the date from DB
+                task['META_LASTUPDATEDATE'] = reformatDates(task['META_LASTUPDATEDATE']);
+                task['STATUSTIMESTAMP'] = reformatDates(task['STATUSTIMESTAMP']);
+                if(task['COMMENTS']===null){
+                    task['COMMENTS']="";
+                }
+
+                if(task['WIDGETID']!==undefined){
+                    task['WIDGETID'] = String(task['WIDGETID']);
+                }
+                
+                if(global.usersList && 
+                    task['STATUSIDSTAMP'] &&
+                    global.usersList[task['STATUSIDSTAMP'].toUpperCase()])
+                    {
+                    const user = global.usersList[task['STATUSIDSTAMP'].toUpperCase()];
+                    task['STATUSIDSTAMP'] = user.lname + ", " + user.fname
+                    }
+
+                // Attach availablestatuses to each task
+                task.availablestatuses = statusArray;
+                if (task['CFD_HELPTEXT_CONVERTED']) {
+                    task['CFD_HELPTEXT_CONVERTED'] = this.convertLinksToAnchor(task['CFD_HELPTEXT_CONVERTED']);
+                }
+            }
+
+            return {
+                headerData: headerData1.rows,
+                pmtasks: pmData
+            };
+        } catch (error) {
+            throw error;
+        }
+        
+    }
+    private convertLinksToAnchor(helptext: string): string {
+        helptext= helptext.replace(
+            /\[\[LINK:(.*?)\]\](.*?)\[\[\/?\\?LINK\]\]/g,
+            (match, url, text) => 
+                `<a href="${url}" target="_blank" title="Link to '${url}'">${text}</a>`
+        );
+        helptext = helptext.replace(/\s*Â\s*/g,'');
+        return helptext;
+    }
+}
