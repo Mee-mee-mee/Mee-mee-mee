@@ -1,0 +1,190 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenReadingController } from './updategenreading.controller';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { Response, Request } from 'express';
+import logger from '../common/logger/logger';
+
+jest.mock('../common/logger/logger');
+
+describe('UpdateGenReadingController', () => {
+  let controller: UpdateGenReadingController;
+  let updateGenreadingService: UpdateGenreadingService;
+  let req: Request;
+  let res: Response;
+  let logInfo: jest.Mock;
+  let logError: jest.Mock;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UpdateGenReadingController],
+      providers: [UpdateGenreadingService],
+    }).compile();
+
+    controller = module.get<UpdateGenReadingController>(UpdateGenReadingController);
+    updateGenreadingService = module.get<UpdateGenreadingService>(UpdateGenreadingService);
+
+    req = {
+      body: { readings: [{}], userid: 'user1', pm_unid: 123 },
+    } as unknown as Request;
+    res = {
+      send: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as unknown as Response;
+
+    logInfo = logger.info as jest.Mock;
+    logError = logger.error as jest.Mock;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should call the update service and return data on success', async () => {
+    const mockData = { 
+      message: 'Readings added/updated successfully',
+      data: { 
+        pm_unid: 123,
+        readings: [{}],
+        userid: 'user1',
+      }
+    };
+
+    jest.spyOn(updateGenreadingService, 'updateDetails').mockResolvedValue(mockData);
+
+    await controller.putGenReading(req, res);
+
+    expect(res.send).toHaveBeenCalledWith(mockData);
+    expect(logInfo).toHaveBeenCalledWith('Processing request to update PM genreading.');
+    expect(logInfo).toHaveBeenCalledWith('Updating genreading details.');
+  });
+
+  it('should return an error response and log error on failure', async () => {
+    const error = new Error('Internal error');
+    jest.spyOn(updateGenreadingService, 'updateDetails').mockRejectedValue(error);
+
+    await controller.putGenReading(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Internal server error',
+      error: error.message,
+    });
+    expect(logError).toHaveBeenCalledWith('Error in updating genreading.', { errorMessage: error.message, stack: error.stack });
+  });
+});
+==
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenreadingService } from './updategenreading.service';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+
+jest.mock('./updategenreading.repo');
+
+describe('UpdateGenreadingService', () => {
+  let updateGenreadingService: UpdateGenreadingService;
+  let updateGenReadingRepo: UpdateGenReadingRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UpdateGenreadingService, UpdateGenReadingRepo],
+    }).compile();
+
+    updateGenreadingService = module.get<UpdateGenreadingService>(UpdateGenreadingService);
+    updateGenReadingRepo = module.get<UpdateGenReadingRepo>(UpdateGenReadingRepo);
+  });
+
+  it('should be defined', () => {
+    expect(updateGenreadingService).toBeDefined();
+  });
+
+  it('should call UpdateGenReadingRepo and return success message', async () => {
+    const mockData = { 
+      message: 'Readings added/updated successfully',
+      data: { 
+        pm_unid: 123,
+        readings: [{}],
+        userid: 'user1',
+      }
+    };
+
+    // Mock the repository call
+    jest.spyOn(updateGenReadingRepo, 'updategenreading').mockResolvedValue(mockData);
+
+    const result = await updateGenreadingService.updateDetails({
+      body: { readings: [{}], userid: 'user1', pm_unid: 123 }
+    });
+
+    expect(result).toEqual(mockData);
+    expect(updateGenReadingRepo.updategenreading).toHaveBeenCalled();
+  });
+
+  it('should throw an error if the repository fails', async () => {
+    const error = new Error('Error in UpdateGenReadingRepo');
+    jest.spyOn(updateGenReadingRepo, 'updategenreading').mockRejectedValue(error);
+
+    try {
+      await updateGenreadingService.updateDetails({
+        body: { readings: [{}], userid: 'user1', pm_unid: 123 }
+      });
+    } catch (e) {
+      expect(e.message).toBe(error.message);
+    }
+  });
+});
+
++=====
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateGenReadingRepo } from './updategenreading.repo';
+import { Oracle } from '../common/database/oracle';
+import * as config from 'config';
+
+jest.mock('../common/database/oracle');
+
+describe('UpdateGenReadingRepo', () => {
+  let updateGenReadingRepo: UpdateGenReadingRepo;
+  let oraUtil: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UpdateGenReadingRepo, Oracle],
+    }).compile();
+
+    updateGenReadingRepo = module.get<UpdateGenReadingRepo>(UpdateGenReadingRepo);
+    oraUtil = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(updateGenReadingRepo).toBeDefined();
+  });
+
+  it('should update genreading and return affected rows', async () => {
+    const mockData = { rowsAffected: 1 };
+    const query = `UPDATE opspm.pm_location_task 
+                   SET SPECIFIC_DATA_VALUE = :SPECIFIC_DATA_VALUE, 
+                   META_LAST_UPDATED_DATE = sys_extract_utc(systimestamp), 
+                   META_LAST_UPDATED_BY = :META_CREATED_BY 
+                   WHERE PM_HEADER_ID = :pm_unid`;
+
+    // Mock the database query execution
+    jest.spyOn(oraUtil, 'executeQuery').mockResolvedValue(mockData);
+
+    const result = await updateGenReadingRepo.updategenreading({ body: { readings: [{}], userid: 'user1', pm_unid: 123 } });
+
+    expect(result).toEqual(1);
+    expect(oraUtil.executeQuery).toHaveBeenCalledWith(
+      query, // Ensure the query string is correct
+      expect.arrayContaining([expect.any(String), expect.any(String), expect.any(Number)]) // Flexible check for parameters
+    );
+  });
+
+  it('should throw an error if the database query fails', async () => {
+    const error = new Error('Database query failed');
+    jest.spyOn(oraUtil, 'executeQuery').mockRejectedValue(error);
+
+    try {
+      await updateGenReadingRepo.updategenreading({ body: { readings: [{}], userid: 'user1', pm_unid: 123 } });
+    } catch (e) {
+      expect(e.message).toBe(error.message);
+    }
+  });
+});
