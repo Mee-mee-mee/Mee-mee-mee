@@ -116,3 +116,139 @@ export default class UpdateSwitchTaskRepo {
         SELECT PM_HEADER_ID FROM OPSPM.pm_location_task WHERE SWITCH_UNID = :SWITCH_UNID AND PM_HEADER_ID = :PM_UNID
         )`
 }
+TTTTTTTTTTTTTTTTT
+import { Test, TestingModule } from '@nestjs/testing';
+import { updateSwitchTaskController } from './updateSwitchTask.controller';
+import { UpdateSwitchTaskService } from './updateSwitchTask.service';
+import { Response, Request } from 'express';
+
+jest.mock('./updateSwitchTask.service');
+
+describe('updateSwitchTaskController', () => {
+  let controller: updateSwitchTaskController;
+  let service: UpdateSwitchTaskService;
+  let req: Request;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [updateSwitchTaskController],
+      providers: [UpdateSwitchTaskService],
+    }).compile();
+
+    controller = module.get<updateSwitchTaskController>(updateSwitchTaskController);
+    service = module.get<UpdateSwitchTaskService>(UpdateSwitchTaskService);
+
+    req = { body: { pm: { pmtasks: [], userid: 'user1', switch_unid: '1', pm_unid: '2' } } } as Request;
+    res = { send: jest.fn(), status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should update PM tasks successfully', async () => {
+    const mockResponse = { message: 'PM tasks updated successfully', pm: req.body.pm };
+    jest.spyOn(service, 'updateDetails').mockResolvedValue(mockResponse);
+
+    await controller.updateSwitch(req, res);
+
+    expect(res.send).toHaveBeenCalledWith(mockResponse);
+  });
+
+  it('should handle error when updating PM tasks', async () => {
+    const error = new Error('Internal server error');
+    jest.spyOn(service, 'updateDetails').mockRejectedValue(error);
+
+    await controller.updateSwitch(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Internal server error', error: error.message });
+  });
+});
+==============
+import { Test, TestingModule } from '@nestjs/testing';
+import { UpdateSwitchTaskService } from './updateSwitchTask.service';
+import UpdateSwitchTaskRepo from './updateSwitchTask.repo';
+
+jest.mock('./updateSwitchTask.repo');
+
+describe('UpdateSwitchTaskService', () => {
+  let service: UpdateSwitchTaskService;
+  let repo: UpdateSwitchTaskRepo;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UpdateSwitchTaskService, UpdateSwitchTaskRepo],
+    }).compile();
+
+    service = module.get<UpdateSwitchTaskService>(UpdateSwitchTaskService);
+    repo = module.get<UpdateSwitchTaskRepo>(UpdateSwitchTaskRepo);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should update PM tasks and return a success message', async () => {
+    const req = { body: { pm: { pmtasks: [], userid: 'user1', switch_unid: '1', pm_unid: '2' } } };
+    const mockResult = { message: 'PM tasks updated successfully', pm: req.body.pm };
+    
+    jest.spyOn(repo, 'updateswitchrepo').mockResolvedValue(1);  // Mocking the repo method
+    const result = await service.updateDetails(req);
+
+    expect(result).toEqual(mockResult);
+  });
+
+  it('should throw an error if the repository fails', async () => {
+    const req = { body: { pm: { pmtasks: [], userid: 'user1', switch_unid: '1', pm_unid: '2' } } };
+    const error = new Error('Repo Error');
+    
+    jest.spyOn(repo, 'updateswitchrepo').mockRejectedValue(error);
+
+    await expect(service.updateDetails(req)).rejects.toThrow(error);
+  });
+});
+=====
+import { Test, TestingModule } from '@nestjs/testing';
+import UpdateSwitchTaskRepo from './updateSwitchTask.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './updateSwitchTask.qFactory';
+
+jest.mock('../common/database/oracle');
+
+describe('UpdateSwitchTaskRepo', () => {
+  let repo: UpdateSwitchTaskRepo;
+  let oracle: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UpdateSwitchTaskRepo, Oracle],
+    }).compile();
+
+    repo = module.get<UpdateSwitchTaskRepo>(UpdateSwitchTaskRepo);
+    oracle = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(repo).toBeDefined();
+  });
+
+  it('should update PM tasks successfully', async () => {
+    const mockData = { rowsAffected: 1 };
+    const req = { body: { pm: { pmtasks: [{ isStatusChanged: 1, task_unid: 'task1', status: 'completed', comments: 'Task completed' }], userid: 'user1', switch_unid: '1', pm_unid: '2' } } };
+    jest.spyOn(oracle, 'executeQuery').mockResolvedValue(mockData);
+
+    const result = await repo.updateswitchrepo(req);
+
+    expect(result).toEqual(1);  // We expect the result to be 1 because rowsAffected is 1
+  });
+
+  it('should throw an error if the database query fails', async () => {
+    const error = new Error('Database query failed');
+    const req = { body: { pm: { pmtasks: [{ isStatusChanged: 1, task_unid: 'task1', status: 'completed', comments: 'Task completed' }], userid: 'user1', switch_unid: '1', pm_unid: '2' } } };
+    jest.spyOn(oracle, 'executeQuery').mockRejectedValue(error);
+
+    await expect(repo.updateswitchrepo(req)).rejects.toThrow(error);
+  });
+});
