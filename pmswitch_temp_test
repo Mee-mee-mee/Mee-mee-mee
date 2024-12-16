@@ -1,0 +1,243 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSwitchTemplateController } from './PmSwitchTemplate.controller';
+import { PmSwitchTemplateService } from './PmSwitchTemplate.service';
+import { Response } from 'express';
+import logger from '../common/logger/logger';
+
+jest.mock('./PmSwitchTemplate.service');
+jest.mock('../common/logger/logger');
+
+describe('PmSwitchTemplateController', () => {
+  let controller: PmSwitchTemplateController;
+  let service: PmSwitchTemplateService;
+  let res: Response;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [PmSwitchTemplateController],
+      providers: [PmSwitchTemplateService],
+    }).compile();
+
+    controller = module.get<PmSwitchTemplateController>(PmSwitchTemplateController);
+    service = module.get<PmSwitchTemplateService>(PmSwitchTemplateService);
+    res = {
+      json: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+    } as any;
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getPmTemplateBySwitch', () => {
+    it('should return PM templates when data is found', async () => {
+      const switchUnId = 'switch123';
+      const mockResult = {
+        rows: [
+          {
+            TEMPLATE_NAME: 'Template1',
+            LIST_TEMPLATE_ID: '1',
+            TEMPLATE_DESC: 'Description 1',
+            IS_DISABLED: false,
+            FREQUENCY_NAME: 'Daily',
+          },
+        ],
+      };
+
+      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(mockResult);
+
+      await controller.getPmTemplateBySwitch(switchUnId, null, res);
+
+      expect(service.getPmTemplates).toHaveBeenCalledWith(switchUnId);
+      expect(res.json).toHaveBeenCalledWith({
+        switchUnId: switchUnId,
+        templates: [
+          {
+            name: 'Template1',
+            listTemplateId: '1',
+            description: 'Description 1',
+            isDisabled: false,
+            frequency: 'Daily',
+          },
+        ],
+      });
+    });
+
+    it('should return empty array when no templates are found', async () => {
+      const switchUnId = 'switch123';
+      const mockResult = { rows: [] };
+
+      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(mockResult);
+
+      await controller.getPmTemplateBySwitch(switchUnId, null, res);
+
+      expect(service.getPmTemplates).toHaveBeenCalledWith(switchUnId);
+      expect(res.json).toHaveBeenCalledWith({
+        switchUnId: switchUnId,
+        templates: [],
+      });
+    });
+
+    it('should handle errors gracefully and return 500 status', async () => {
+      const switchUnId = 'switch123';
+      const errorMessage = 'Database error';
+
+      jest.spyOn(service, 'getPmTemplates').mockRejectedValue(new Error(errorMessage));
+
+      await controller.getPmTemplateBySwitch(switchUnId, null, res);
+
+      expect(service.getPmTemplates).toHaveBeenCalledWith(switchUnId);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Internal server error',
+        error: errorMessage,
+      });
+    });
+
+    it('should log appropriate messages during execution', async () => {
+      const switchUnId = 'switch123';
+      const mockResult = {
+        rows: [
+          {
+            TEMPLATE_NAME: 'Template1',
+            LIST_TEMPLATE_ID: '1',
+            TEMPLATE_DESC: 'Description 1',
+            IS_DISABLED: false,
+            FREQUENCY_NAME: 'Daily',
+          },
+        ],
+      };
+
+      const infoSpy = jest.spyOn(logger, 'info');
+      const debugSpy = jest.spyOn(logger, 'debug');
+      const errorSpy = jest.spyOn(logger, 'error');
+
+      jest.spyOn(service, 'getPmTemplates').mockResolvedValue(mockResult);
+
+      await controller.getPmTemplateBySwitch(switchUnId, null, res);
+
+      expect(infoSpy).toHaveBeenCalledWith('Processing request to fetch PM templates for a specific switch.');
+      expect(debugSpy).toHaveBeenCalledWith('Request parameters:', { switchUnId });
+      expect(debugSpy).toHaveBeenCalledWith('Request headers:', { headers: undefined });
+      expect(infoSpy).toHaveBeenCalledWith('Fetching PM templates for the switch.', { switchUnId });
+      expect(debugSpy).toHaveBeenCalledWith('Raw result from service:', { result: mockResult });
+      expect(infoSpy).toHaveBeenCalledWith('PM templates found for the switch.', { switchUnId, templatesCount: 1 });
+    });
+  });
+});
+++++++++++
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSwitchTemplateService } from './PmSwitchTemplate.service';
+import { PmSwitchTemplateRepository } from './PmSwitchTemplate.repo';
+
+jest.mock('./PmSwitchTemplate.repo');
+
+describe('PmSwitchTemplateService', () => {
+  let service: PmSwitchTemplateService;
+  let repo: PmSwitchTemplateRepository;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [PmSwitchTemplateService, PmSwitchTemplateRepository],
+    }).compile();
+
+    service = module.get<PmSwitchTemplateService>(PmSwitchTemplateService);
+    repo = module.get<PmSwitchTemplateRepository>(PmSwitchTemplateRepository);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('getPmTemplates', () => {
+    it('should return templates when repository provides data', async () => {
+      const switchUnId = 'switch123';
+      const mockResult = {
+        rows: [
+          {
+            TEMPLATE_NAME: 'Template1',
+            LIST_TEMPLATE_ID: '1',
+            TEMPLATE_DESC: 'Description 1',
+            IS_DISABLED: false,
+            FREQUENCY_NAME: 'Daily',
+          },
+        ],
+      };
+
+      jest.spyOn(repo, 'testFunc').mockResolvedValue(mockResult);
+
+      const result = await service.getPmTemplates(switchUnId);
+
+      expect(repo.testFunc).toHaveBeenCalledWith(switchUnId);
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw an error when repository fails', async () => {
+      const switchUnId = 'switch123';
+      const errorMessage = 'Service Error: Unable to fetch template';
+
+      jest.spyOn(repo, 'testFunc').mockRejectedValue(new Error(errorMessage));
+
+      try {
+        await service.getPmTemplates(switchUnId);
+      } catch (error) {
+        expect(error.message).toBe('Service Error: Unable to fetch template');
+      }
+    });
+  });
+});
+
+++++++++++
+import { Test, TestingModule } from '@nestjs/testing';
+import { PmSwitchTemplateRepository } from './PmSwitchTemplate.repo';
+import { Oracle } from '../common/database/oracle';
+import { queries } from './PmSwitchTemplate.qfactory';
+
+jest.mock('../common/database/oracle');
+jest.mock('../common/logger/logger');
+
+describe('PmSwitchTemplateRepository', () => {
+  let repository: PmSwitchTemplateRepository;
+  let oracleMock: Oracle;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [PmSwitchTemplateRepository, Oracle],
+    }).compile();
+
+    repository = module.get<PmSwitchTemplateRepository>(PmSwitchTemplateRepository);
+    oracleMock = module.get<Oracle>(Oracle);
+  });
+
+  it('should be defined', () => {
+    expect(repository).toBeDefined();
+  });
+
+  describe('testFunc', () => {
+    it('should return result when query is successful', async () => {
+      const switchUnId = 'switch123';
+      const mockResult = { rows: [{ TEMPLATE_NAME: 'Template1' }] };
+
+      jest.spyOn(oracleMock, 'executeQuery').mockResolvedValue(mockResult);
+
+      const result = await repository.testFunc(switchUnId);
+
+      expect(oracleMock.executeQuery).toHaveBeenCalledWith(queries.getSwitchPmTemplates, { switchUnId });
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw an error when query fails', async () => {
+      const switchUnId = 'switch123';
+      const errorMessage = 'Database query failed';
+
+      jest.spyOn(oracleMock, 'executeQuery').mockRejectedValue(new Error(errorMessage));
+
+      try {
+        await repository.testFunc(switchUnId);
+      } catch (error) {
+        expect(error.message).toBe(errorMessage);
+      }
+    });
+  });
+});
